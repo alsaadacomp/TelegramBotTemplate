@@ -1,0 +1,124 @@
+# ========================================
+# Node.js
+# ========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.npm
+.pnp
+.pnp.js
+
+# ========================================
+# Environment Variables
+# ========================================
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# ========================================
+# Data & Database
+# ========================================
+data/database/*.db
+data/database/*.db-shm
+data/database/*.db-wal
+data/backups/*
+!data/backups/.gitkeep
+
+# ========================================
+# Cache
+# ========================================
+data/cache/*
+!data/cache/.gitkeep
+.cache/
+
+# ========================================
+# Logs
+# ========================================
+data/logs/*.log
+data/logs/*.log.*
+*.log
+logs/
+!data/logs/.gitkeep
+
+# ========================================
+# Uploads & Temporary Files
+# ========================================
+uploads/*
+!uploads/.gitkeep
+temp/
+tmp/
+*.tmp
+
+# ========================================
+# Testing
+# ========================================
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+
+# ========================================
+# IDE & Editors
+# ========================================
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ========================================
+# Build & Distribution
+# ========================================
+dist/
+build/
+*.tgz
+
+# ========================================
+# OS Files
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
+
+# ========================================
+# Google Credentials
+# ========================================
+google-credentials.json
+service-account.json
+credentials.json
+
+# ========================================
+# Sensitive Information
+# ========================================
+*.pem
+*.key
+*.cert
+secrets/
+
+# ========================================
+# Documentation Build
+# ========================================
+docs/_build/
+docs/.doctrees/
+
+# ========================================
+# Optional Files
+# ========================================
+.eslintcache
+.prettierignore
+.editorconfig
