@@ -47,14 +47,19 @@ class SQLiteAdapter extends DatabaseAdapter {
       // Connect to database
       this.db = await this._openDatabase();
 
+      // Mark as connected BEFORE configuration (so raw() works)
+      this.connected = true;
+
       // Configure database
       await this._configureDatabase();
 
-      this.connected = true;
       this.emitSafe('connected', { adapter: this.name, path: this.dbPath });
       
       console.log(`SQLiteAdapter: Connected to ${this.dbPath}`);
     } catch (error) {
+      // Reset connection state on error
+      this.connected = false;
+      this.db = null;
       this.handleError(error, 'connect');
     }
   }
@@ -447,21 +452,27 @@ class SQLiteAdapter extends DatabaseAdapter {
       throw new Error('Database not connected');
     }
 
-    try {
-      // Determine query type
+    return new Promise((resolve, reject) => {
       const isSelect = sql.trim().toUpperCase().startsWith('SELECT');
-      const isInsert = sql.trim().toUpperCase().startsWith('INSERT');
 
       if (isSelect) {
-        return await promisify(this.db.all.bind(this.db))(sql, params);
-      } else if (isInsert) {
-        return await promisify(this.db.run.bind(this.db))(sql, params);
+        this.db.all(sql, params, (err, rows) => {
+          if (err) {
+            reject(new Error(`SQL Error: ${err.message}\nQuery: ${sql}`));
+          } else {
+            resolve(rows);
+          }
+        });
       } else {
-        return await promisify(this.db.run.bind(this.db))(sql, params);
+        this.db.run(sql, params, function(err) {
+          if (err) {
+            reject(new Error(`SQL Error: ${err.message}\nQuery: ${sql}`));
+          } else {
+            resolve(this);
+          }
+        });
       }
-    } catch (error) {
-      throw new Error(`SQL Error: ${error.message}\nQuery: ${sql}`);
-    }
+    });
   }
 
   // ========================================

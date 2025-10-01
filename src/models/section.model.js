@@ -33,7 +33,7 @@ class SectionModel {
       type: 'TEXT NOT NULL', // 'main', 'sub', 'action'
       parent_id: 'TEXT', // ID القسم الأب
       icon: 'TEXT',
-      order: 'INTEGER DEFAULT 0',
+      order_index: 'INTEGER DEFAULT 0', // ✅ تم التغيير من order إلى order_index
       enabled: 'INTEGER DEFAULT 1',
       visible: 'INTEGER DEFAULT 1',
       workflow_id: 'TEXT', // ربط بـ workflow
@@ -54,7 +54,7 @@ class SectionModel {
   static getDefaults() {
     return {
       type: 'main',
-      order: 0,
+      order_index: 0, // ✅ تم التغيير من order إلى order_index
       enabled: 1,
       visible: 1,
       view_count: 0,
@@ -292,7 +292,7 @@ class SectionModel {
   async getChildren(parentId, options = {}) {
     return await this.find(
       { parent_id: parentId, enabled: 1 },
-      { ...options, orderBy: 'order', orderDirection: 'ASC' }
+      { ...options, orderBy: 'order_index', orderDirection: 'ASC' } // ✅ تم التغيير
     );
   }
 
@@ -306,7 +306,7 @@ class SectionModel {
       const sections = await this.db.raw(
         `SELECT * FROM ${this.tableName} 
          WHERE (parent_id IS NULL OR parent_id = '') AND enabled = 1
-         ORDER BY \`order\` ASC`,
+         ORDER BY order_index ASC`, // ✅ تم التغيير
         []
       );
       
@@ -374,13 +374,13 @@ class SectionModel {
   }
 
   /**
-   * Update section order
+   * Update section order_index
    * @param {string} sectionId - Section ID
-   * @param {number} order - New order
+   * @param {number} orderIndex - New order_index
    * @returns {Promise<number>} Number of updated records
    */
-  async updateOrder(sectionId, order) {
-    return await this.updateBySectionId(sectionId, { order });
+  async updateOrder(sectionId, orderIndex) { // ✅ تم التغيير
+    return await this.updateBySectionId(sectionId, { order_index: orderIndex });
   }
 
   /**

@@ -1,124 +1,164 @@
-# ========================================
+# ==========================================
+# Telegram Bot Template - .gitignore
+# ==========================================
+
+# ==========================================
 # Node.js
-# ========================================
+# ==========================================
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
-yarn.lock
-.npm
-.pnp
-.pnp.js
+lerna-debug.log*
+.pnpm-debug.log*
 
-# ========================================
+# ==========================================
 # Environment Variables
-# ========================================
+# ==========================================
 .env
 .env.local
-.env.development
-.env.test
-.env.production
+.env.development.local
+.env.test.local
+.env.production.local
 
-# ========================================
-# Data & Database
-# ========================================
+# ==========================================
+# Data & Databases
+# ==========================================
 data/database/*.db
+data/database/*.sqlite
+data/database/*.sqlite3
 data/database/*.db-shm
 data/database/*.db-wal
-data/backups/*
-!data/backups/.gitkeep
 
-# ========================================
-# Cache
-# ========================================
-data/cache/*
-!data/cache/.gitkeep
-.cache/
+# Backups
+data/backups/*.zip
+data/backups/*.tar.gz
 
-# ========================================
+# ==========================================
 # Logs
-# ========================================
+# ==========================================
 data/logs/*.log
 data/logs/*.log.*
 *.log
 logs/
-!data/logs/.gitkeep
+*.log.*
 
-# ========================================
+# ==========================================
+# Cache
+# ==========================================
+data/cache/*
+.cache/
+*.cache
+
+# ==========================================
 # Uploads & Temporary Files
-# ========================================
+# ==========================================
 uploads/*
-!uploads/.gitkeep
-temp/
-tmp/
+temp/*
+tmp/*
 *.tmp
 
-# ========================================
-# Testing
-# ========================================
-coverage/
-.nyc_output/
-*.lcov
-test-results/
+# ==========================================
+# OS Files
+# ==========================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# ========================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Linux
+*~
+.directory
+
+# ==========================================
 # IDE & Editors
-# ========================================
-.vscode/
+# ==========================================
+# VSCode
+.vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
+*.code-workspace
 
-# ========================================
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+
+# ==========================================
+# Testing
+# ==========================================
+coverage/
+.nyc_output/
+*.lcov
+
+# ==========================================
 # Build & Distribution
-# ========================================
+# ==========================================
 dist/
 build/
 *.tgz
 
-# ========================================
-# OS Files
-# ========================================
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Desktop.ini
+# ==========================================
+# Sensitive Data (IMPORTANT!)
+# ==========================================
+# Telegram Bot Token
+*token*
+*secret*
+*key*
 
-# ========================================
-# Google Credentials
-# ========================================
-google-credentials.json
-service-account.json
-credentials.json
+# Google Sheets Credentials
+*credentials*.json
+*service-account*.json
 
-# ========================================
-# Sensitive Information
-# ========================================
-*.pem
-*.key
-*.cert
-secrets/
+# Any config with sensitive data
+config/production.config.js
+config/secrets.config.js
 
-# ========================================
-# Documentation Build
-# ========================================
-docs/_build/
-docs/.doctrees/
+# ==========================================
+# Keep Important Empty Directories
+# ==========================================
+!data/database/.gitkeep
+!data/cache/.gitkeep
+!data/logs/.gitkeep
+!data/backups/.gitkeep
+!uploads/.gitkeep
+!temp/.gitkeep
 
-# ========================================
-# Optional Files
-# ========================================
-.eslintcache
-.prettierignore
-.editorconfig
+# ==========================================
+# Project Specific
+# ==========================================
+# Test output files
+tests/manual/*.output.txt
+tests/manual/*.result.json
+
+# Generated documentation
+docs/generated/
+
+# ==========================================
+# Lock Files (Optional - Choose One)
+# ==========================================
+# Uncomment if you want to ignore lock files
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml

@@ -1,12 +1,15 @@
 {
   "name": "telegram-bot-template",
-  "version": "1.0.0",
+  "version": "0.5.1",
   "description": "Professional Telegram Bot Template with SQLite/Google Sheets support, dynamic sections, workflow engine, and multi-level permissions system",
   "main": "src/bot.js",
   "scripts": {
     "start": "node src/bot.js",
     "dev": "nodemon src/bot.js",
     "test": "jest --coverage",
+    "test:manual:logger": "node tests/manual/test-logger.js",
+    "test:manual:cache": "node tests/manual/test-cache.js",
+    "test:manual:errors": "node tests/manual/test-errors.js",
     "test:watch": "jest --watch",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
@@ -15,6 +18,7 @@
     "lint:fix": "eslint src/**/*.js --fix",
     "format": "prettier --write \"src/**/*.js\"",
     "setup": "node scripts/setup.script.js",
+    "logs:rotate": "node scripts/rotate-logs.script.js",
     "create:workflow": "node scripts/create-workflow.script.js",
     "create:section": "node scripts/create-section.script.js",
     "sync:db": "node scripts/sync-db.script.js",
@@ -29,10 +33,22 @@
     "workflow",
     "permissions",
     "arabic",
-    "template"
+    "template",
+    "cache",
+    "logging",
+    "winston",
+    "adapter-pattern"
   ],
   "author": "Alsaada",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YOUR_USERNAME/TelegramBotTemplate.git"
+  },
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/TelegramBotTemplate/issues"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/TelegramBotTemplate#readme",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"

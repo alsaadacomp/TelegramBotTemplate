@@ -1,2 +1,1 @@
-# This file keeps the directory in git
-# Directory: uploads
+# This file ensures the directory is tracked by Git even when empty

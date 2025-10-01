@@ -1,547 +1,489 @@
+// src/services/database.service.js
+
 /**
- * Database Service
- * Main service for database operations
- * Factory for creating and managing database adapters
+ * Database Service - Complete Implementation
  * 
- * @module services/database
+ * Provides high-level database operations for the bot
+ * Handles users, sections, logs, settings, and conversation states
+ * 
+ * @module DatabaseService
  */
 
-const databaseConfig = require('../../config/database.config');
+const DatabaseAdapter = require('../core/database-adapter.core');
 const SQLiteAdapter = require('../adapters/sqlite.adapter');
 const UserModel = require('../models/user.model');
 const SectionModel = require('../models/section.model');
+const logger = require('../utils/logger.util');
+const DatabaseConfig = require('../../config/database.config');
 
-/**
- * Database Service Class
- */
 class DatabaseService {
   constructor() {
     this.adapter = null;
-    this.models = {};
-    this.connected = false;
+    this.isInitialized = false;
+    this.config = DatabaseConfig;
+    this.models = {
+      user: null,
+      section: null
+    };
   }
 
-  // ========================================
-  // Initialization
-  // ========================================
-
-  /**
-   * Initialize database service
-   * @returns {Promise<void>}
-   */
   async initialize() {
     try {
-      console.log('DatabaseService: Initializing...');
-
-      // Create adapter based on config
+      logger.database('info', 'DatabaseService: Initializing...');
       this.adapter = this._createAdapter();
-
-      // Connect to database
       await this.adapter.connect();
-
-      // Initialize models
-      await this._initializeModels();
-
-      // Create tables if they don't exist
-      await this._initializeTables();
-
-      this.connected = true;
-
-      console.log('DatabaseService: Initialized successfully');
-      console.log('DatabaseService: Configuration:', databaseConfig.getSummary());
-    } catch (error) {
-      console.error('DatabaseService: Initialization failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Shutdown database service
-   * @returns {Promise<void>}
-   */
-  async shutdown() {
-    try {
-      if (this.adapter && this.connected) {
-        await this.adapter.disconnect();
-        this.connected = false;
-        console.log('DatabaseService: Shut down successfully');
-      }
-    } catch (error) {
-      console.error('DatabaseService: Shutdown failed:', error);
-      throw error;
-    }
-  }
-
-  // ========================================
-  // Adapter Factory
-  // ========================================
-
-  /**
-   * Create database adapter based on configuration
-   * @private
-   * @returns {DatabaseAdapter} Database adapter instance
-   */
-  _createAdapter() {
-    const mode = databaseConfig.mode;
-
-    console.log(`DatabaseService: Creating adapter for mode: ${mode}`);
-
-    switch (mode) {
-      case 'sqlite':
-        return new SQLiteAdapter(databaseConfig.sqlite);
-
-      case 'sheets':
-        // TODO: Implement Google Sheets adapter in future
-        throw new Error('Google Sheets adapter not yet implemented');
-
-      case 'hybrid':
-        // TODO: Implement hybrid adapter in future
-        // For now, use SQLite as primary
-        console.warn('DatabaseService: Hybrid mode not fully implemented, using SQLite');
-        return new SQLiteAdapter(databaseConfig.sqlite);
-
-      default:
-        throw new Error(`Invalid database mode: ${mode}`);
-    }
-  }
-
-  /**
-   * Initialize models
-   * @private
-   * @returns {Promise<void>}
-   */
-  async _initializeModels() {
-    try {
-      // Create model instances
       this.models.user = new UserModel(this.adapter);
       this.models.section = new SectionModel(this.adapter);
-
-      console.log('DatabaseService: Models initialized');
-    } catch (error) {
-      console.error('DatabaseService: Failed to initialize models:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Initialize database tables
-   * @private
-   * @returns {Promise<void>}
-   */
-  async _initializeTables() {
-    try {
-      console.log('DatabaseService: Initializing tables...');
-
-      // Initialize each model's table
+      logger.database('info', 'DatabaseService: Models initialized');
+      logger.database('info', 'DatabaseService: Initializing tables...');
       await this.models.user.initialize();
       await this.models.section.initialize();
-
-      console.log('DatabaseService: All tables initialized');
+      await this._initializeLogsTable();
+      await this._initializeSettingsTable();
+      await this._initializeConversationStatesTable();
+      logger.database('info', 'DatabaseService: All tables initialized');
+      this.isInitialized = true;
+      logger.info('DatabaseService: Initialized successfully');
+      logger.database('info', 'DatabaseService: Configuration:', this.config.getSummary());
+      return true;
     } catch (error) {
-      console.error('DatabaseService: Failed to initialize tables:', error);
+      logger.error('DatabaseService: Initialization failed:', error);
       throw error;
     }
   }
 
-  // ========================================
-  // Model Accessors
-  // ========================================
-
-  /**
-   * Get User model
-   * @returns {UserModel}
-   */
-  getUserModel() {
-    if (!this.models.user) {
-      throw new Error('User model not initialized');
-    }
-    return this.models.user;
-  }
-
-  /**
-   * Get Section model
-   * @returns {SectionModel}
-   */
-  getSectionModel() {
-    if (!this.models.section) {
-      throw new Error('Section model not initialized');
-    }
-    return this.models.section;
-  }
-
-  /**
-   * Get all models
-   * @returns {Object} All models
-   */
-  getModels() {
-    return this.models;
-  }
-
-  // ========================================
-  // Direct Database Access (pass-through to adapter)
-  // ========================================
-
-  /**
-   * Create record (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {Object} data - Data to insert
-   * @returns {Promise<Object>} Created record
-   */
-  async create(table, data) {
-    return await this.adapter.create(table, data);
-  }
-
-  /**
-   * Find records (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {Object} criteria - Search criteria
-   * @param {Object} options - Query options
-   * @returns {Promise<Array>} Records array
-   */
-  async find(table, criteria = {}, options = {}) {
-    return await this.adapter.find(table, criteria, options);
-  }
-
-  /**
-   * Find one record (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {Object} criteria - Search criteria
-   * @returns {Promise<Object|null>} Record or null
-   */
-  async findOne(table, criteria) {
-    return await this.adapter.findOne(table, criteria);
-  }
-
-  /**
-   * Find by ID (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {number|string} id - Record ID
-   * @returns {Promise<Object|null>} Record or null
-   */
-  async findById(table, id) {
-    return await this.adapter.findById(table, id);
-  }
-
-  /**
-   * Update records (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {Object} criteria - Search criteria
-   * @param {Object} data - Data to update
-   * @returns {Promise<number>} Number of updated records
-   */
-  async update(table, criteria, data) {
-    return await this.adapter.update(table, criteria, data);
-  }
-
-  /**
-   * Update by ID (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {number|string} id - Record ID
-   * @param {Object} data - Data to update
-   * @returns {Promise<boolean>} Success status
-   */
-  async updateById(table, id, data) {
-    return await this.adapter.updateById(table, id, data);
-  }
-
-  /**
-   * Delete records (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {Object} criteria - Search criteria
-   * @returns {Promise<number>} Number of deleted records
-   */
-  async delete(table, criteria) {
-    return await this.adapter.delete(table, criteria);
-  }
-
-  /**
-   * Delete by ID (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {number|string} id - Record ID
-   * @returns {Promise<boolean>} Success status
-   */
-  async deleteById(table, id) {
-    return await this.adapter.deleteById(table, id);
-  }
-
-  /**
-   * Count records (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {Object} criteria - Search criteria
-   * @returns {Promise<number>} Number of records
-   */
-  async count(table, criteria = {}) {
-    return await this.adapter.count(table, criteria);
-  }
-
-  /**
-   * Execute raw query (pass-through to adapter)
-   * @param {string} query - Query string
-   * @param {Array} params - Query parameters
-   * @returns {Promise<any>} Query result
-   */
-  async raw(query, params = []) {
-    return await this.adapter.raw(query, params);
-  }
-
-  /**
-   * Create table (pass-through to adapter)
-   * @param {string} table - Table name
-   * @param {Object} schema - Table schema
-   * @returns {Promise<void>}
-   */
-  async createTable(table, schema) {
-    return await this.adapter.createTable(table, schema);
-  }
-
-  /**
-   * Drop table (pass-through to adapter)
-   * @param {string} table - Table name
-   * @returns {Promise<void>}
-   */
-  async dropTable(table) {
-    return await this.adapter.dropTable(table);
-  }
-
-  /**
-   * Check if table exists (pass-through to adapter)
-   * @param {string} table - Table name
-   * @returns {Promise<boolean>}
-   */
-  async tableExists(table) {
-    return await this.adapter.tableExists(table);
-  }
-
-  // ========================================
-  // Transaction Support
-  // ========================================
-
-  /**
-   * Execute function within transaction
-   * @param {Function} callback - Function to execute
-   * @returns {Promise<any>} Result from callback
-   */
-  async transaction(callback) {
-    return await this.adapter.transaction(callback);
-  }
-
-  /**
-   * Begin transaction
-   * @returns {Promise<void>}
-   */
-  async beginTransaction() {
-    return await this.adapter.beginTransaction();
-  }
-
-  /**
-   * Commit transaction
-   * @returns {Promise<void>}
-   */
-  async commit() {
-    return await this.adapter.commit();
-  }
-
-  /**
-   * Rollback transaction
-   * @returns {Promise<void>}
-   */
-  async rollback() {
-    return await this.adapter.rollback();
-  }
-
-  // ========================================
-  // Utility Methods
-  // ========================================
-
-  /**
-   * Test database connection
-   * @returns {Promise<boolean>}
-   */
-  async testConnection() {
-    try {
-      if (!this.adapter) {
-        return false;
-      }
-      return await this.adapter.testConnection();
-    } catch (error) {
-      console.error('DatabaseService: Connection test failed:', error);
-      return false;
+  _createAdapter() {
+    const mode = this.config.mode;
+    logger.database('info', `DatabaseService: Creating adapter for mode: ${mode}`);
+    switch (mode) {
+      case 'sqlite':
+        return new SQLiteAdapter(this.config.sqlite);
+      case 'sheets':
+        throw new Error('Google Sheets adapter not yet implemented');
+      case 'hybrid':
+        throw new Error('Hybrid mode not yet implemented');
+      default:
+        throw new Error(`Unknown database mode: ${mode}`);
     }
   }
 
-  /**
-   * Check if service is connected
-   * @returns {boolean}
-   */
-  isConnected() {
-    return this.connected && this.adapter && this.adapter.isConnected();
+  async _initializeLogsTable() {
+    const query = `
+      CREATE TABLE IF NOT EXISTS logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        level TEXT NOT NULL,
+        message TEXT NOT NULL,
+        user_id INTEGER,
+        action TEXT,
+        metadata TEXT,
+        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `;
+    await this.adapter.raw(query);
+    await this.adapter.raw('CREATE INDEX IF NOT EXISTS idx_logs_level ON logs(level)');
+    await this.adapter.raw('CREATE INDEX IF NOT EXISTS idx_logs_user_id ON logs(user_id)');
+    await this.adapter.raw('CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp)');
+    logger.database('info', 'LogsModel: Table initialized');
   }
 
-  /**
-   * Get adapter name
-   * @returns {string}
-   */
-  getAdapterName() {
-    return this.adapter ? this.adapter.getName() : 'None';
+  async _initializeSettingsTable() {
+    const query = `
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        type TEXT DEFAULT 'string',
+        description TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    await this.adapter.raw(query);
+    logger.database('info', 'SettingsModel: Table initialized');
   }
 
-  /**
-   * Get database statistics
-   * @returns {Promise<Object>} Database statistics
-   */
-  async getStatistics() {
-    try {
-      const stats = {
-        adapter: this.getAdapterName(),
-        connected: this.isConnected(),
-        models: Object.keys(this.models),
-      };
-
-      // Get statistics from each model
-      if (this.models.user) {
-        stats.users = await this.models.user.getStatistics();
-      }
-
-      if (this.models.section) {
-        stats.sections = await this.models.section.getStatistics();
-      }
-
-      return stats;
-    } catch (error) {
-      console.error('DatabaseService: Failed to get statistics:', error);
-      throw error;
-    }
+  async _initializeConversationStatesTable() {
+    const query = `
+      CREATE TABLE IF NOT EXISTS conversation_states (
+        user_id INTEGER PRIMARY KEY,
+        workflow_id TEXT NOT NULL,
+        current_step TEXT NOT NULL,
+        data TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      )
+    `;
+    await this.adapter.raw(query);
+    await this.adapter.raw('CREATE INDEX IF NOT EXISTS idx_conversation_states_workflow ON conversation_states(workflow_id)');
+    logger.database('info', 'ConversationStatesModel: Table initialized');
   }
 
-  /**
-   * Backup database (SQLite only)
-   * @param {string} backupPath - Path for backup file
-   * @returns {Promise<void>}
-   */
-  async backup(backupPath) {
-    try {
-      if (this.getAdapterName() !== 'SQLiteAdapter') {
-        throw new Error('Backup only supported for SQLite');
-      }
-
-      // TODO: Implement backup functionality
-      console.log(`DatabaseService: Backup to ${backupPath} - Not yet implemented`);
-    } catch (error) {
-      console.error('DatabaseService: Backup failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Restore database from backup (SQLite only)
-   * @param {string} backupPath - Path to backup file
-   * @returns {Promise<void>}
-   */
-  async restore(backupPath) {
-    try {
-      if (this.getAdapterName() !== 'SQLiteAdapter') {
-        throw new Error('Restore only supported for SQLite');
-      }
-
-      // TODO: Implement restore functionality
-      console.log(`DatabaseService: Restore from ${backupPath} - Not yet implemented`);
-    } catch (error) {
-      console.error('DatabaseService: Restore failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Validate database configuration
-   * @returns {Object} Validation result
-   */
-  validateConfig() {
-    return databaseConfig.validate();
-  }
-
-  /**
-   * Get database configuration summary
-   * @returns {Object} Configuration summary
-   */
-  getConfigSummary() {
-    return databaseConfig.getSummary();
-  }
-
-  // ========================================
-  // Event Handling
-  // ========================================
-
-  /**
-   * Listen to adapter events
-   * @param {string} event - Event name
-   * @param {Function} callback - Event callback
-   */
-  on(event, callback) {
+  async disconnect() {
     if (this.adapter) {
-      this.adapter.on(event, callback);
+      await this.adapter.disconnect();
+      this.isInitialized = false;
+      logger.database('info', 'DatabaseService: Disconnected');
     }
   }
 
-  /**
-   * Remove event listener
-   * @param {string} event - Event name
-   * @param {Function} callback - Event callback
-   */
-  off(event, callback) {
-    if (this.adapter) {
-      this.adapter.off(event, callback);
+  async createUser(userData) {
+    try {
+      logger.database('info', 'DatabaseService: Creating user', { telegram_id: userData.telegram_id });
+      const user = await this.models.user.create(userData);
+      logger.info('DatabaseService: User created successfully', { id: user.id, telegram_id: user.telegram_id });
+      return user;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to create user', error);
+      throw error;
+    }
+  }
+
+  async getUser(userId) {
+    try {
+      return await this.models.user.findById(userId);
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get user', error);
+      throw error;
+    }
+  }
+
+  async getUserByTelegramId(telegramId) {
+    try {
+      logger.database('debug', 'DatabaseService: Getting user by telegram_id', { telegram_id: telegramId });
+      const user = await this.models.user.findByTelegramId(telegramId);
+      if (user) {
+        logger.database('debug', 'DatabaseService: User found', { id: user.id, telegram_id: user.telegram_id });
+      } else {
+        logger.database('debug', 'DatabaseService: User not found', { telegram_id: telegramId });
+      }
+      return user;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get user by telegram_id', error);
+      throw error;
+    }
+  }
+
+  async updateUser(userId, updates) {
+    try {
+      logger.database('info', 'DatabaseService: Updating user', { user_id: userId });
+      const user = await this.models.user.update(userId, updates);
+      logger.info('DatabaseService: User updated successfully', { id: user.id });
+      return user;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to update user', error);
+      throw error;
+    }
+  }
+
+  async deleteUser(userId) {
+    try {
+      logger.database('info', 'DatabaseService: Deleting user', { user_id: userId });
+      const result = await this.models.user.delete(userId);
+      logger.info('DatabaseService: User deleted successfully', { id: userId });
+      return result;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to delete user', error);
+      throw error;
+    }
+  }
+
+  async getAllUsers() {
+    try {
+      return await this.models.user.findAll();
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get all users', error);
+      throw error;
+    }
+  }
+
+  async getUsersByRole(role) {
+    try {
+      return await this.models.user.findByRole(role);
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get users by role', error);
+      throw error;
+    }
+  }
+
+  async getActiveUsers() {
+    try {
+      return await this.models.user.findByStatus('active');
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get active users', error);
+      throw error;
+    }
+  }
+
+  async updateUserLastActive(userId) {
+    try {
+      return await this.models.user.updateLastActive(userId);
+    } catch (error) {
+      logger.error('DatabaseService: Failed to update user last active', error);
+      throw error;
+    }
+  }
+
+  async createSection(sectionData) {
+    try {
+      logger.database('info', 'DatabaseService: Creating section', { id: sectionData.id });
+      const section = await this.models.section.create(sectionData);
+      logger.info('DatabaseService: Section created successfully', { id: section.id });
+      return section;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to create section', error);
+      throw error;
+    }
+  }
+
+  async getSection(sectionId) {
+    try {
+      return await this.models.section.findById(sectionId);
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get section', error);
+      throw error;
+    }
+  }
+
+  async getAllSections() {
+    try {
+      return await this.models.section.findAll();
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get all sections', error);
+      throw error;
+    }
+  }
+
+  async getEnabledSections() {
+    try {
+      return await this.models.section.findEnabled();
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get enabled sections', error);
+      throw error;
+    }
+  }
+
+  async getSectionsTree() {
+    try {
+      return await this.models.section.buildTree();
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get sections tree', error);
+      throw error;
+    }
+  }
+
+  async updateSection(sectionId, updates) {
+    try {
+      logger.database('info', 'DatabaseService: Updating section', { section_id: sectionId });
+      const section = await this.models.section.update(sectionId, updates);
+      logger.info('DatabaseService: Section updated successfully', { id: section.id });
+      return section;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to update section', error);
+      throw error;
+    }
+  }
+
+  async deleteSection(sectionId) {
+    try {
+      logger.database('info', 'DatabaseService: Deleting section', { section_id: sectionId });
+      const result = await this.models.section.delete(sectionId);
+      logger.info('DatabaseService: Section deleted successfully', { id: sectionId });
+      return result;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to delete section', error);
+      throw error;
+    }
+  }
+
+  async createLog(logData) {
+    try {
+      const query = `
+        INSERT INTO logs (level, message, user_id, action, metadata)
+        VALUES (?, ?, ?, ?, ?)
+      `;
+      const params = [
+        logData.level,
+        logData.message,
+        logData.user_id || null,
+        logData.action || null,
+        logData.metadata ? JSON.stringify(logData.metadata) : null
+      ];
+      const result = await this.adapter.raw(query, params);
+      return { id: result.lastID, ...logData };
+    } catch (error) {
+      logger.error('DatabaseService: Failed to create log', error);
+      throw error;
+    }
+  }
+
+  async getLogs(options = {}) {
+    try {
+      const { level = null, user_id = null, action = null, limit = 100, offset = 0 } = options;
+      let query = 'SELECT * FROM logs WHERE 1=1';
+      const params = [];
+      if (level) {
+        query += ' AND level = ?';
+        params.push(level);
+      }
+      if (user_id) {
+        query += ' AND user_id = ?';
+        params.push(user_id);
+      }
+      if (action) {
+        query += ' AND action = ?';
+        params.push(action);
+      }
+      query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
+      params.push(limit, offset);
+      const logs = await this.adapter.query(query, params);
+      return logs.map(log => ({
+        ...log,
+        metadata: log.metadata ? JSON.parse(log.metadata) : null
+      }));
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get logs', error);
+      throw error;
+    }
+  }
+
+  async deleteOldLogs(days = 30) {
+    try {
+      const query = `DELETE FROM logs WHERE timestamp < datetime('now', '-${days} days')`;
+      const result = await this.adapter.raw(query);
+      logger.info(`DatabaseService: Deleted ${result.changes} old logs`);
+      return result.changes;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to delete old logs', error);
+      throw error;
+    }
+  }
+
+  async getSetting(key) {
+    try {
+      const query = 'SELECT * FROM settings WHERE key = ?';
+      const result = await this.adapter.queryOne(query, [key]);
+      if (!result) return null;
+      return this._parseSettingValue(result.value, result.type);
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get setting', error);
+      throw error;
+    }
+  }
+
+  async setSetting(key, value, type = 'string', description = null) {
+    try {
+      const query = `
+        INSERT INTO settings (key, value, type, description, updated_at)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(key) DO UPDATE SET
+          value = excluded.value,
+          type = excluded.type,
+          description = excluded.description,
+          updated_at = CURRENT_TIMESTAMP
+      `;
+      const params = [key, this._stringifySettingValue(value, type), type, description];
+      await this.adapter.raw(query, params);
+      logger.database('info', 'DatabaseService: Setting saved', { key });
+      return true;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to set setting', error);
+      throw error;
+    }
+  }
+
+  async getAllSettings() {
+    try {
+      const query = 'SELECT * FROM settings';
+      const results = await this.adapter.query(query);
+      const settings = {};
+      for (const row of results) {
+        settings[row.key] = this._parseSettingValue(row.value, row.type);
+      }
+      return settings;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get all settings', error);
+      throw error;
+    }
+  }
+
+  async deleteSetting(key) {
+    try {
+      const query = 'DELETE FROM settings WHERE key = ?';
+      await this.adapter.raw(query, [key]);
+      logger.database('info', 'DatabaseService: Setting deleted', { key });
+      return true;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to delete setting', error);
+      throw error;
+    }
+  }
+
+  _parseSettingValue(value, type) {
+    switch (type) {
+      case 'number': return Number(value);
+      case 'boolean': return value === 'true' || value === '1';
+      case 'json': return JSON.parse(value);
+      case 'array': return JSON.parse(value);
+      default: return value;
+    }
+  }
+
+  _stringifySettingValue(value, type) {
+    switch (type) {
+      case 'number': return String(value);
+      case 'boolean': return value ? 'true' : 'false';
+      case 'json':
+      case 'array': return JSON.stringify(value);
+      default: return String(value);
+    }
+  }
+
+  async getConversationState(userId) {
+    try {
+      const query = 'SELECT * FROM conversation_states WHERE user_id = ?';
+      const state = await this.adapter.queryOne(query, [userId]);
+      if (state && state.data) {
+        state.data = JSON.parse(state.data);
+      }
+      return state;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get conversation state', error);
+      throw error;
+    }
+  }
+
+  async setConversationState(userId, stateData) {
+    try {
+      const query = `
+        INSERT INTO conversation_states (user_id, workflow_id, current_step, data, updated_at)
+        VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(user_id) DO UPDATE SET
+          workflow_id = excluded.workflow_id,
+          current_step = excluded.current_step,
+          data = excluded.data,
+          updated_at = CURRENT_TIMESTAMP
+      `;
+      const params = [userId, stateData.workflow_id, stateData.current_step, JSON.stringify(stateData.data || {})];
+      await this.adapter.raw(query, params);
+      logger.database('info', 'DatabaseService: Conversation state saved', { user_id: userId });
+      return true;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to set conversation state', error);
+      throw error;
+    }
+  }
+
+  async deleteConversationState(userId) {
+    try {
+      const query = 'DELETE FROM conversation_states WHERE user_id = ?';
+      await this.adapter.raw(query, [userId]);
+      logger.database('info', 'DatabaseService: Conversation state deleted', { user_id: userId });
+      return true;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to delete conversation state', error);
+      throw error;
     }
   }
 }
 
-// ========================================
-// Singleton Instance
-// ========================================
-
-let instance = null;
-
-/**
- * Get singleton instance of DatabaseService
- * @returns {DatabaseService}
- */
-function getInstance() {
-  if (!instance) {
-    instance = new DatabaseService();
-  }
-  return instance;
-}
-
-/**
- * Initialize database service (singleton)
- * @returns {Promise<DatabaseService>}
- */
-async function initializeDatabase() {
-  const dbService = getInstance();
-  
-  if (!dbService.isConnected()) {
-    await dbService.initialize();
-  }
-  
-  return dbService;
-}
-
-/**
- * Shutdown database service (singleton)
- * @returns {Promise<void>}
- */
-async function shutdownDatabase() {
-  const dbService = getInstance();
-  await dbService.shutdown();
-  instance = null;
-}
-
-// ========================================
-// Exports
-// ========================================
-
-module.exports = {
-  DatabaseService,
-  getInstance,
-  initializeDatabase,
-  shutdownDatabase,
-};
+module.exports = new DatabaseService();
