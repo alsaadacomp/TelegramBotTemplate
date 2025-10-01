@@ -566,9 +566,18 @@ docs/:             4,300 سطر ✅
 - التزم بمعايير التسمية الصارمة
 - اختبر قبل الـ commit
 
+- **Additional Utilities:**
+    - Validators utility (`src/utils/validators.util.js`).
+    - Helpers utility (`src/utils/helpers.util.js`).
+    - Formatters utility (`src/utils/formatters.util.js`).
+- **Manual Utility Tests:**
+    - Manual test for validators (`tests/manual/test-validators.js`).
+    - Manual test for helpers (`tests/manual/test-helpers.js`).
+    - Manual test for formatters (`tests/manual/test-formatters.js`).
+
 ---
 
-**آخر تحديث:** 2025-10-01 19:00  
+**Last Updated:** 2023-10-26  
 **المحدث بواسطة:** System  
 **المرحلة الحالية:** 1.5 (✅ مكتمل 100%)  
 **المرحلة القادمة:** 1.6 (⏳ قيد الانتظار)  

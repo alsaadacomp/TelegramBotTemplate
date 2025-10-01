@@ -56,10 +56,72 @@ function toArabic(input) {
  */
 const normalize = toEnglish;
 
+/**
+ * Formats a number with thousands separator and decimal places
+ * @param {number|string} number - Number to format
+ * @param {Object} options - Formatting options
+ * @param {number} options.decimals - Number of decimal places (default: 0)
+ * @param {string} options.separator - Thousands separator (default: ',')
+ * @param {string} options.decimalPoint - Decimal point (default: '.')
+ * @param {boolean} options.arabic - Use Arabic numerals (default: true)
+ * @returns {string} Formatted number
+ * @example
+ * formatNumber(1234567.89, { decimals: 2, arabic: true }); // '١٬٢٣٤٬٥٦٧٫٨٩'
+ */
+function formatNumber(number, options = {}) {
+  const {
+    decimals = 0,
+    separator = '،', // Arabic comma
+    decimalPoint = '٫', // Arabic decimal point
+    arabic = true
+  } = options;
+
+  if (number === null || number === undefined || isNaN(number)) {
+    return '';
+  }
+
+  // Convert to number if string
+  const num = typeof number === 'string' ? parseFloat(number) : number;
+  
+  // Round to specified decimals
+  const factor = Math.pow(10, decimals);
+  const rounded = Math.round(num * factor) / factor;
+  
+  // Split into integer and decimal parts
+  const parts = rounded.toFixed(decimals).split('.');
+  const integerPart = parts[0];
+  const decimalPart = parts[1];
+  
+  // Add thousands separator
+  const withSeparator = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, separator);
+  
+  // Combine parts
+  let result = decimalPart ? `${withSeparator}${decimalPoint}${decimalPart}` : withSeparator;
+  
+  // Convert to Arabic if needed
+  if (arabic) {
+    result = toArabic(result);
+  }
+  
+  return result;
+}
+
+// Aliases for compatibility
+const normalizeArabicNumbers = toEnglish;
+const toArabicNumbers = toArabic;
+
 module.exports = {
+  // Main functions
   toEnglish,
   toArabic,
   normalize,
+  formatNumber,
+  
+  // Aliases for compatibility
+  normalizeArabicNumbers,
+  toArabicNumbers,
+  
+  // Constants
   ARABIC_NUMERALS,
   ENGLISH_NUMERALS,
 };
