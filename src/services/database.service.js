@@ -166,9 +166,11 @@ class DatabaseService {
   async updateUser(userId, updates) {
     try {
       logger.database('info', 'DatabaseService: Updating user', { user_id: userId });
-      const user = await this.models.user.update(userId, updates);
-      logger.info('DatabaseService: User updated successfully', { id: user.id });
-      return user;
+      const success = await this.models.user.update(userId, updates);
+      if(success) {
+        logger.info('DatabaseService: User updated successfully', { id: userId });
+      }
+      return success;
     } catch (error) {
       logger.error('DatabaseService: Failed to update user', error);
       throw error;
@@ -187,6 +189,24 @@ class DatabaseService {
     }
   }
 
+  async deleteUserByTelegramId(telegramId) {
+    try {
+      const user = await this.getUserByTelegramId(telegramId);
+      if (!user) {
+        return 0;
+      }
+      await this.deleteConversationState(user.id);
+      await this.adapter.raw('DELETE FROM logs WHERE user_id = ?', [user.id]);
+      logger.database('info', 'DatabaseService: Deleting user by telegram_id', { telegram_id: telegramId });
+      const result = await this.models.user.deleteByTelegramId(telegramId);
+      logger.info('DatabaseService: User deleted successfully', { telegram_id: telegramId });
+      return result;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to delete user by telegram_id', error);
+      throw error;
+    }
+  }
+
   async getAllUsers() {
     try {
       return await this.models.user.findAll();
@@ -198,7 +218,7 @@ class DatabaseService {
 
   async getUsersByRole(role) {
     try {
-      return await this.models.user.findByRole(role);
+      return await this.models.user.getByRole(role);
     } catch (error) {
       logger.error('DatabaseService: Failed to get users by role', error);
       throw error;
@@ -225,10 +245,10 @@ class DatabaseService {
 
   async createSection(sectionData) {
     try {
-      logger.database('info', 'DatabaseService: Creating section', { id: sectionData.id });
+      logger.database('info', 'DatabaseService: Creating section', { section_id: sectionData.section_id });
       const section = await this.models.section.create(sectionData);
       logger.info('DatabaseService: Section created successfully', { id: section.id });
-      return section;
+      return await this.models.section.findBySectionId(sectionData.section_id);
     } catch (error) {
       logger.error('DatabaseService: Failed to create section', error);
       throw error;
@@ -237,7 +257,7 @@ class DatabaseService {
 
   async getSection(sectionId) {
     try {
-      return await this.models.section.findById(sectionId);
+      return await this.models.section.findBySectionId(sectionId);
     } catch (error) {
       logger.error('DatabaseService: Failed to get section', error);
       throw error;
@@ -274,9 +294,11 @@ class DatabaseService {
   async updateSection(sectionId, updates) {
     try {
       logger.database('info', 'DatabaseService: Updating section', { section_id: sectionId });
-      const section = await this.models.section.update(sectionId, updates);
-      logger.info('DatabaseService: Section updated successfully', { id: section.id });
-      return section;
+      const success = await this.models.section.update(sectionId, updates);
+      if(success){
+        logger.info('DatabaseService: Section updated successfully', { id: sectionId });
+      }
+      return success;
     } catch (error) {
       logger.error('DatabaseService: Failed to update section', error);
       throw error;
@@ -286,7 +308,7 @@ class DatabaseService {
   async deleteSection(sectionId) {
     try {
       logger.database('info', 'DatabaseService: Deleting section', { section_id: sectionId });
-      const result = await this.models.section.delete(sectionId);
+      const result = await this.models.section.deleteBySectionId(sectionId);
       logger.info('DatabaseService: Section deleted successfully', { id: sectionId });
       return result;
     } catch (error) {

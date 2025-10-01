@@ -238,6 +238,20 @@ class SectionModel {
   }
 
   /**
+   * Delete section by section_id
+   * @param {string} sectionId - Section ID
+   * @returns {Promise<number>} Number of deleted records
+   */
+  async deleteBySectionId(sectionId) {
+    try {
+      return await this.db.delete(this.tableName, { section_id: sectionId });
+    } catch (error) {
+      console.error('SectionModel: Failed to delete section by section_id:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Count sections by criteria
    * @param {Object} criteria - Search criteria
    * @returns {Promise<number>} Number of sections

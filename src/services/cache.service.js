@@ -301,6 +301,30 @@ class CacheService {
       return 0;
     }
   }
+
+  /**
+   * Delete all keys with a given prefix
+   * @param {string} prefix - The prefix to match
+   */
+  deleteWithPrefix(prefix) {
+    try {
+      let deletedCount = 0;
+      for (const cacheName in this.caches) {
+        const cache = this.caches[cacheName];
+        const keys = cache.keys();
+        for (const key of keys) {
+          if (key.startsWith(prefix)) {
+            deletedCount += cache.del(key);
+          }
+        }
+      }
+      if (CACHE_CONFIG.debug.logOperations) {
+        Logger.debug(`Cache DELETE with prefix: ${prefix}`, { deletedCount });
+      }
+    } catch (error) {
+      Logger.error('Cache deleteWithPrefix error', { prefix, error: error.message });
+    }
+  }
   
   // ========================================
   // Cleanup & Management

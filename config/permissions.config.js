@@ -491,3 +491,71 @@ module.exports = {
     return Object.values(this.roles).filter(r => r.level < role.level);
   },
 };
+
+// ========================================
+// Simplified Exports (for backward compatibility)
+// ========================================
+
+/**
+ * Simple ROLES constant (role names only)
+ */
+const ROLES = {
+  SUPER_ADMIN: 'super_admin',
+  ADMIN: 'admin',
+  MANAGER: 'manager',
+  MODERATOR: 'moderator',
+  USER: 'user'
+};
+
+/**
+ * Simple PERMISSIONS constant (permission → allowed roles)
+ */
+const PERMISSIONS = {
+  // System
+  SYSTEM_MANAGE: ['super_admin'],
+  SYSTEM_SETTINGS: ['super_admin', 'admin'],
+  SYSTEM_BACKUP: ['super_admin', 'admin'],
+  
+  // Users
+  USERS_VIEW: ['super_admin', 'admin', 'manager'],
+  USERS_EDIT: ['super_admin', 'admin'],
+  USERS_DELETE: ['super_admin'],
+  
+  // Sections
+  SECTIONS_VIEW: ['super_admin', 'admin', 'manager'],
+  SECTIONS_CREATE: ['super_admin', 'admin'],
+  SECTIONS_EDIT: ['super_admin', 'admin'],
+  SECTIONS_DELETE: ['super_admin'],
+  SECTIONS_TOGGLE: ['super_admin', 'admin'],
+  
+  // Data
+  DATA_VIEW: ['super_admin', 'admin', 'manager', 'moderator'],
+  DATA_CREATE: ['super_admin', 'admin', 'manager'],
+  DATA_EDIT: ['super_admin', 'admin', 'manager'],
+  DATA_DELETE: ['super_admin', 'admin'],
+  DATA_EXPORT: ['super_admin', 'admin', 'manager'],
+  
+  // Broadcast
+  BROADCAST_ALL: ['super_admin'],
+  BROADCAST_ROLE: ['super_admin', 'admin'],
+  
+  // Logs
+  LOGS_VIEW: ['super_admin', 'admin'],
+  LOGS_DELETE: ['super_admin']
+};
+
+/**
+ * Role hierarchy (for comparison)
+ */
+const ROLE_HIERARCHY = {
+  super_admin: 5,
+  admin: 4,
+  manager: 3,
+  moderator: 2,
+  user: 1
+};
+
+// Export both the main config and simple constants
+module.exports.ROLES = ROLES;
+module.exports.PERMISSIONS = PERMISSIONS;
+module.exports.ROLE_HIERARCHY = ROLE_HIERARCHY;

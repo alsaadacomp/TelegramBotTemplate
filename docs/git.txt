@@ -1,0 +1,6 @@
+cd F:\_Alsaada_Telegram_Bot\TelegramBotTemplate
+git add .
+git commit -m "feat(phase-1.5): complete error handling system"
+git push -u origin main
+git tag -a v0.5.1 -m "Release v0.5.1"
+git push origin --tags

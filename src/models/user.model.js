@@ -219,6 +219,24 @@ class UserModel {
   }
 
   /**
+   * Delete user by Telegram ID
+   * @param {number} telegramId - Telegram ID
+   * @returns {Promise<number>} Number of deleted records
+   */
+  async deleteByTelegramId(telegramId) {
+    try {
+      const result = await this.db.delete(this.tableName, { telegram_id: telegramId });
+      if (result > 0) {
+        console.log(`UserModel: User deleted - Telegram ID: ${telegramId}`);
+      }
+      return result;
+    } catch (error) {
+      console.error('UserModel: Failed to delete user by Telegram ID:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Count users by criteria
    * @param {Object} criteria - Search criteria
    * @returns {Promise<number>} Number of users
