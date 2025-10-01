@@ -22,7 +22,8 @@
     "create:workflow": "node scripts/create-workflow.script.js",
     "create:section": "node scripts/create-section.script.js",
     "sync:db": "node scripts/sync-db.script.js",
-    "backup": "node scripts/backup.script.js"
+    "backup": "node scripts/backup.script.js",
+	"test": "jest"
   },
   "keywords": [
     "telegram",
@@ -54,28 +55,28 @@
     "npm": ">=9.0.0"
   },
   "dependencies": {
-    "telegraf": "^4.15.0",
-    "sqlite3": "^5.1.7",
-    "googleapis": "^126.0.1",
-    "google-auth-library": "^9.4.1",
-    "node-cache": "^5.1.2",
-    "winston": "^3.11.0",
-    "winston-daily-rotate-file": "^4.7.1",
+    "crypto-js": "^4.2.0",
+    "date-fns": "^2.30.0",
     "dotenv": "^16.3.1",
     "exceljs": "^4.4.0",
+    "google-auth-library": "^9.4.1",
+    "googleapis": "^126.0.1",
     "joi": "^17.11.0",
-    "date-fns": "^2.30.0",
-    "crypto-js": "^4.2.0"
+    "node-cache": "^5.1.2",
+    "sqlite3": "^5.1.7",
+    "telegraf": "^4.15.0",
+    "winston": "^3.11.0",
+    "winston-daily-rotate-file": "^4.7.1"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2",
-    "jest": "^29.7.0",
-    "supertest": "^6.3.3",
     "@types/jest": "^29.5.11",
     "eslint": "^8.56.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.29.1",
-    "prettier": "^3.1.1"
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "prettier": "^3.1.1",
+    "supertest": "^6.3.3"
   },
   "jest": {
     "testEnvironment": "node",
