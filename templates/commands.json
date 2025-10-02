@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "description": "تعريف أوامر البوت والصلاحيات - قابل للتعديل",
+    "last_updated": "2025-10-02"
+  },
+
+  "commands": [
+    {
+      "command": "start",
+      "description": "بدء البوت",
+      "description_en": "Start the bot",
+      "icon": "🏠",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": true,
+      "permissions": ["user", "moderator", "manager", "admin", "super_admin"],
+      "handler": "start.handler.js"
+    },
+    {
+      "command": "menu",
+      "description": "القائمة الرئيسية",
+      "description_en": "Main menu",
+      "icon": "📋",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": true,
+      "permissions": ["user", "moderator", "manager", "admin", "super_admin"],
+      "handler": "menu.handler.js"
+    },
+    {
+      "command": "help",
+      "description": "المساعدة",
+      "description_en": "Help",
+      "icon": "❓",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": true,
+      "permissions": ["user", "moderator", "manager", "admin", "super_admin"],
+      "handler": "help.handler.js"
+    },
+    {
+      "command": "profile",
+      "description": "الملف الشخصي",
+      "description_en": "Profile",
+      "icon": "👤",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": true,
+      "permissions": ["user", "moderator", "manager", "admin", "super_admin"],
+      "handler": "profile.handler.js"
+    },
+    {
+      "command": "settings",
+      "description": "الإعدادات",
+      "description_en": "Settings",
+      "icon": "⚙️",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": true,
+      "permissions": ["user", "moderator", "manager", "admin", "super_admin"],
+      "handler": "settings.handler.js"
+    },
+    {
+      "command": "stats",
+      "description": "الإحصائيات",
+      "description_en": "Statistics",
+      "icon": "📊",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": true,
+      "permissions": ["manager", "admin", "super_admin"],
+      "handler": "stats.handler.js"
+    },
+    {
+      "command": "users",
+      "description": "إدارة المستخدمين",
+      "description_en": "User management",
+      "icon": "👥",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": true,
+      "permissions": ["admin", "super_admin"],
+      "handler": "users.handler.js"
+    },
+    {
+      "command": "logs",
+      "description": "السجلات",
+      "description_en": "Logs",
+      "icon": "📝",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": true,
+      "permissions": ["admin", "super_admin"],
+      "handler": "logs.handler.js"
+    },
+    {
+      "command": "system",
+      "description": "إدارة النظام",
+      "description_en": "System management",
+      "icon": "🔧",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": true,
+      "permissions": ["super_admin"],
+      "handler": "system.handler.js"
+    },
+    {
+      "command": "backup",
+      "description": "النسخ الاحتياطي",
+      "description_en": "Backup",
+      "icon": "💾",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": false,
+      "permissions": ["super_admin"],
+      "handler": "backup.handler.js"
+    },
+    {
+      "command": "sync",
+      "description": "المزامنة",
+      "description_en": "Synchronization",
+      "icon": "🔄",
+      "enabled": true,
+      "show_in_menu": true,
+      "show_in_side_menu": false,
+      "permissions": ["super_admin"],
+      "handler": "sync.handler.js"
+    }
+  ],
+
+  "side_menu_settings": {
+    "enabled": true,
+    "language": "ar",
+    "auto_update": true
+  }
+}

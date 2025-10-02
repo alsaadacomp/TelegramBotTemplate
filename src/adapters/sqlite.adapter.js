@@ -475,6 +475,11 @@ class SQLiteAdapter extends DatabaseAdapter {
     });
   }
 
+  async queryOne(sql, params = []) {
+    const rows = await this.raw(sql, params);
+    return rows[0];
+  }
+
   // ========================================
   // Table Management
   // ========================================

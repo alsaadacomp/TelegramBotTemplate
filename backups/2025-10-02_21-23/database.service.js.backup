@@ -2,9 +2,11 @@
 
 /**
  * Database Service - Complete Implementation
- * * Provides high-level database operations for the bot
+ * 
+ * Provides high-level database operations for the bot
  * Handles users, sections, logs, settings, and conversation states
- * * @module DatabaseService
+ * 
+ * @module DatabaseService
  */
 
 const DatabaseAdapter = require('../core/database-adapter.core');
@@ -13,7 +15,6 @@ const UserModel = require('../models/user.model');
 const SectionModel = require('../models/section.model');
 const logger = require('../utils/logger.util');
 const DatabaseConfig = require('../../config/database.config');
-// const migrationRunner = require('../utils/migrate');
 
 class DatabaseService {
   constructor() {
@@ -25,53 +26,33 @@ class DatabaseService {
       section: null
     };
   }
-  
-  /**
-   * Initialize the database service
-   * @returns {Promise<boolean>} True if initialization was successful
-   */
+
   async initialize() {
     try {
       logger.database('info', 'DatabaseService: Initializing...');
       this.adapter = this._createAdapter();
       await this.adapter.connect();
-      
-      // Initialize models
       this.models.user = new UserModel(this.adapter);
       this.models.section = new SectionModel(this.adapter);
-      
       logger.database('info', 'DatabaseService: Models initialized');
       logger.database('info', 'DatabaseService: Initializing tables...');
-      
-      // Initialize core tables
       await this.models.user.initialize();
       await this.models.section.initialize();
       await this._initializeLogsTable();
       await this._initializeSettingsTable();
       await this._initializeConversationStatesTable();
       await this._initializeJoinRequestsTable();
-      
       logger.database('info', 'DatabaseService: All tables initialized');
-      
-      // Run database migrations
-      // logger.database('info', 'DatabaseService: Running migrations...');
-      // await migrationRunner.initialize();
-      
       this.isInitialized = true;
-      logger.info('DatabaseService: initialized successfully');
+      logger.info('DatabaseService: Initialized successfully');
       logger.database('info', 'DatabaseService: Configuration:', this.config.getSummary());
       return true;
     } catch (error) {
-      logger.database('error', 'DatabaseService: Initialization failed', error);
+      logger.error('DatabaseService: Initialization failed:', error);
       throw error;
     }
   }
 
-  /**
-   * Create database adapter based on configuration
-   * @private
-   * @returns {DatabaseAdapter} Database adapter instance
-   */
   _createAdapter() {
     const mode = this.config.mode;
     logger.database('info', `DatabaseService: Creating adapter for mode: ${mode}`);
@@ -124,12 +105,13 @@ class DatabaseService {
   async _initializeConversationStatesTable() {
     const query = `
       CREATE TABLE IF NOT EXISTS conversation_states (
-        telegram_id INTEGER PRIMARY KEY,
+        user_id INTEGER PRIMARY KEY,
         workflow_id TEXT NOT NULL,
         current_step TEXT NOT NULL,
         data TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
       )
     `;
     await this.adapter.raw(query);
@@ -239,7 +221,7 @@ class DatabaseService {
       if (!user) {
         return 0;
       }
-      await this.deleteConversationState(telegramId);
+      await this.deleteConversationState(user.id);
       await this.adapter.raw('DELETE FROM logs WHERE user_id = ?', [user.id]);
       logger.database('info', 'DatabaseService: Deleting user by telegram_id', { telegram_id: telegramId });
       const result = await this.models.user.deleteByTelegramId(telegramId);
@@ -445,7 +427,7 @@ class DatabaseService {
         ON CONFLICT(key) DO UPDATE SET
           value = excluded.value,
           type = excluded.type,
-          description = COALESCE(excluded.description, description),
+          description = excluded.description,
           updated_at = CURRENT_TIMESTAMP
       `;
       const params = [key, this._stringifySettingValue(value, type), type, description];
@@ -505,10 +487,10 @@ class DatabaseService {
     }
   }
 
-  async getConversationState(telegramId) {
+  async getConversationState(userId) {
     try {
-      const query = 'SELECT * FROM conversation_states WHERE telegram_id = ?';
-      const rows = await this.adapter.raw(query, [telegramId]);
+      const query = 'SELECT * FROM conversation_states WHERE user_id = ?';
+      const rows = await this.adapter.raw(query, [userId]);
       const state = rows.length > 0 ? rows[0] : null;
       if (state && state.data) {
         state.data = JSON.parse(state.data);
@@ -520,20 +502,20 @@ class DatabaseService {
     }
   }
 
-  async setConversationState(telegramId, stateData) {
+  async setConversationState(userId, stateData) {
     try {
       const query = `
-        INSERT INTO conversation_states (telegram_id, workflow_id, current_step, data, updated_at)
+        INSERT INTO conversation_states (user_id, workflow_id, current_step, data, updated_at)
         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(telegram_id) DO UPDATE SET
+        ON CONFLICT(user_id) DO UPDATE SET
           workflow_id = excluded.workflow_id,
           current_step = excluded.current_step,
           data = excluded.data,
           updated_at = CURRENT_TIMESTAMP
       `;
-      const params = [telegramId, stateData.workflow_id, stateData.current_step, JSON.stringify(stateData.data || {})];
+      const params = [userId, stateData.workflow_id, stateData.current_step, JSON.stringify(stateData.data || {})];
       await this.adapter.raw(query, params);
-      logger.database('info', 'DatabaseService: Conversation state saved', { telegram_id: telegramId });
+      logger.database('info', 'DatabaseService: Conversation state saved', { user_id: userId });
       return true;
     } catch (error) {
       logger.error('DatabaseService: Failed to set conversation state', error);
@@ -541,11 +523,11 @@ class DatabaseService {
     }
   }
 
-  async deleteConversationState(telegramId) {
+  async deleteConversationState(userId) {
     try {
-      const query = 'DELETE FROM conversation_states WHERE telegram_id = ?';
-      await this.adapter.raw(query, [telegramId]);
-      logger.database('info', 'DatabaseService: Conversation state deleted', { telegram_id: telegramId });
+      const query = 'DELETE FROM conversation_states WHERE user_id = ?';
+      await this.adapter.raw(query, [userId]);
+      logger.database('info', 'DatabaseService: Conversation state deleted', { user_id: userId });
       return true;
     } catch (error) {
       logger.error('DatabaseService: Failed to delete conversation state', error);
@@ -568,30 +550,6 @@ class DatabaseService {
       return await this.adapter.raw(sql, params);
     } catch (error) {
       logger.error('DatabaseService: Failed to query', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Provides a 'run' alias for 'raw' to be compatible with migration runner.
-   */
-  async run(sql, params) {
-    try {
-      return await this.adapter.raw(sql, params);
-    } catch (error) {
-      logger.error('DatabaseService: Failed to run command', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Provides an 'all' alias for 'query' to be compatible with migration runner.
-   */
-  async all(sql, params) {
-    try {
-      return await this.adapter.query(sql, params);
-    } catch (error) {
-      logger.error('DatabaseService: Failed to run all command', error);
       throw error;
     }
   }
@@ -670,8 +628,7 @@ class DatabaseService {
         ORDER BY requested_at DESC 
         LIMIT 1
       `;
-      const rows = await this.adapter.raw(query, [telegramId]);
-      const request = rows.length > 0 ? rows[0] : null;
+      const request = await this.adapter.queryOne(query, [telegramId]);
       if (request && request.metadata) {
         request.metadata = JSON.parse(request.metadata);
       }
@@ -771,71 +728,23 @@ class DatabaseService {
   }
 
   /**
-   * Get the size of the database file
-   * @returns {Promise<string>} Formatted database size (e.g., "2.5 MB")
-   */
-  async getDatabaseSize() {
-    try {
-      const fs = require('fs');
-      const path = require('path');
-      
-      // Get the database file path from the adapter
-      let dbPath = './data/database/bot.db'; // Default path
-      
-      // If using SQLite adapter, get the actual path
-      if (this.adapter && this.adapter.getDatabasePath) {
-        dbPath = this.adapter.getDatabasePath();
-      }
-      
-      // Convert to absolute path if it's relative
-      const absolutePath = path.isAbsolute(dbPath) ? dbPath : path.join(process.cwd(), dbPath);
-      
-      // Check if file exists
-      if (!fs.existsSync(absolutePath)) {
-        return 'غير متاح';
-      }
-      
-      // Get file stats
-      const stats = fs.statSync(absolutePath);
-      const fileSizeInBytes = stats.size;
-      
-      // Convert to appropriate unit
-      const units = ['بايت', 'كيلوبايت', 'ميجابايت', 'جيجابايت'];
-      let size = fileSizeInBytes;
-      let unitIndex = 0;
-      
-      while (size >= 1024 && unitIndex < units.length - 1) {
-        size /= 1024;
-        unitIndex++;
-      }
-      
-      // Format the size with 2 decimal places
-      return `${size.toFixed(2)} ${units[unitIndex]}`;
-      
-    } catch (error) {
-      logger.error('DatabaseService: Failed to get database size', error);
-      return 'غير متاح';
-    }
-  }
-
-  /**
-   * Get the last activity time from the database
-   * @returns {Promise<string>} Formatted time string
+   * Get last activity time
+   * @returns {Promise<string>}
    */
   async getLastActivityTime() {
     try {
       const query = `
-        SELECT last_activity 
+        SELECT last_active 
         FROM users 
-        WHERE last_activity IS NOT NULL 
-        ORDER BY last_activity DESC 
+        WHERE last_active IS NOT NULL 
+        ORDER BY last_active DESC 
         LIMIT 1
       `;
       const rows = await this.adapter.raw(query);
       const result = rows.length > 0 ? rows[0] : null;
-      if (!result || !result.last_activity) return 'لا يوجد';
+      if (!result || !result.last_active) return 'لا يوجد';
       
-      const lastActive = new Date(result.last_activity);
+      const lastActive = new Date(result.last_active);
       const now = new Date();
       const diffMs = now - lastActive;
       const diffMins = Math.floor(diffMs / 60000);
@@ -872,7 +781,30 @@ class DatabaseService {
     }
   }
 
-
+  /**
+   * Get database size
+   * @returns {Promise<string>}
+   */
+  async getDatabaseSize() {
+    try {
+      if (this.config.mode !== 'sqlite') return 'غير متاح';
+      
+      const fs = require('fs');
+      const path = this.config.sqlite.database;
+      
+      if (!fs.existsSync(path)) return 'غير متاح';
+      
+      const stats = fs.statSync(path);
+      const sizeInBytes = stats.size;
+      
+      if (sizeInBytes < 1024) return `${sizeInBytes} بايت`;
+      if (sizeInBytes < 1048576) return `${(sizeInBytes / 1024).toFixed(2)} كيلوبايت`;
+      return `${(sizeInBytes / 1048576).toFixed(2)} ميجابايت`;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get database size', error);
+      return 'غير متاح';
+    }
+  }
 }
 
 module.exports = new DatabaseService();

@@ -31,6 +31,7 @@ class UserModel {
       last_name: 'TEXT',
       phone: 'TEXT',
       role: 'TEXT DEFAULT "user"',
+      status: 'TEXT DEFAULT "pending"',
       is_active: 'INTEGER DEFAULT 1',
       is_banned: 'INTEGER DEFAULT 0',
       banned_reason: 'TEXT',
@@ -39,6 +40,7 @@ class UserModel {
       last_activity: 'TEXT',
       created_at: 'TEXT NOT NULL',
       updated_at: 'TEXT',
+      join_request_id: 'INTEGER REFERENCES join_requests(id)',
     };
   }
 
@@ -49,6 +51,7 @@ class UserModel {
   static getDefaults() {
     return {
       role: 'user',
+      status: 'pending',
       is_active: 1,
       is_banned: 0,
       language: 'ar',
@@ -69,19 +72,38 @@ class UserModel {
       await this.db.createTable(this.tableName, UserModel.getSchema());
       console.log('UserModel: Table initialized');
     } catch (error) {
-      console.error('UserModel: Failed to initialize table:', error);
       throw error;
     }
   }
 
   // ========================================
-  // CRUD Operations
+  // User Operations
   // ========================================
+
+  /**
+   * Update the last activity timestamp for a user
+   * @param {number} telegramId - The user's Telegram ID
+   * @returns {Promise<boolean>} True if the update was successful
+   */
+  async updateLastActivity(telegramId) {
+    try {
+      const now = new Date().toISOString();
+      const result = await this.db.run(
+        `UPDATE ${this.tableName} SET last_activity = ? WHERE telegram_id = ?`,
+        [now, telegramId]
+      );
+      return result.changes > 0;
+    } catch (error) {
+      logger.error('UserModel: Failed to update last activity', { error });
+      return false;
+    }
+  }
 
   /**
    * Create new user
    * @param {Object} userData - User data
    * @returns {Promise<Object>} Created user
+{{ ... }}
    */
   async create(userData) {
     try {

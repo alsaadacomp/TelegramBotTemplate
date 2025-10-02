@@ -88,9 +88,12 @@ class PermissionService {
    * @returns {Promise<object>}
    */
   async createJoinRequest(requestData) {
-    const result = await this.dbService.createJoinRequest(requestData);
-    logger.info(`New join request created for user ${requestData.telegram_id} with ID ${result.id}`, 'Permission');
-    return result;
+    const result = await this.dbService.run(
+      'INSERT INTO join_requests (telegram_id, username, first_name, last_name, full_name, phone) VALUES (?, ?, ?, ?, ?, ?)',
+      [requestData.telegram_id, requestData.username, requestData.first_name, requestData.last_name, requestData.full_name, requestData.phone]
+    );
+    logger.info(`New join request created for user ${requestData.telegram_id} with ID ${result.lastID}`, 'Permission');
+    return { id: result.lastID, ...requestData };
   }
 
   /**
@@ -98,7 +101,7 @@ class PermissionService {
    * @returns {Promise<Array<object>>}
    */
   async getPendingRequests() {
-    return this.dbService.getPendingJoinRequests();
+    return this.dbService.all("SELECT * FROM join_requests WHERE status = 'pending' ORDER BY requested_at ASC");
   }
 
   /**
@@ -126,13 +129,16 @@ class PermissionService {
     };
 
     if (user) {
-      await this.dbService.updateUser(user.id, userData);
+      await this.dbService.updateUser(request.telegram_id, userData);
     } else {
       await this.dbService.createUser(userData);
     }
 
     // 2. Update the request status
-    await this.dbService.updateJoinRequestStatus(requestId, 'approved', adminId);
+    await this.dbService.run(
+      "UPDATE join_requests SET status = 'approved', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [adminId, requestId]
+    );
 
     this.invalidateUserCache(request.telegram_id);
     logger.info(`Join request ${requestId} approved by admin ${adminId}. User ${request.telegram_id} is now an admin.`, 'Permission');
@@ -152,7 +158,10 @@ class PermissionService {
       throw new Error('Request not found or already processed.');
     }
 
-    await this.dbService.updateJoinRequestStatus(requestId, 'rejected', adminId, reason);
+    await this.dbService.run(
+      "UPDATE join_requests SET status = 'rejected', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP, rejection_reason = ? WHERE id = ?",
+      [adminId, reason, requestId]
+    );
 
     logger.info(`Join request ${requestId} rejected by admin ${adminId}.`, 'Permission');
     return request;

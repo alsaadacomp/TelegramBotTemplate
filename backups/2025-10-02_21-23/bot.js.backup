@@ -7,20 +7,19 @@ require('dotenv').config();
 const { Telegraf, session } = require('telegraf');
 const path = require('path');
 const lockfile = require('proper-lockfile');
+
+// Core Services
 const logger = require('./utils/logger.util');
+const dbService = require('./services/database.service');
+
+// Middleware
 const { loggerMiddleware } = require('./middleware/logger.middleware');
 const { authMiddleware, permissionMiddleware } = require('./middleware/auth.middleware');
-const { updateActivityMiddleware } = require('./middleware/activity.middleware');
-const dbService = require('./services/database.service');
-const cacheService = require('./services/cache.service');
-const messageService = require('./services/message.service');
 
 // Handlers
 const { handleStart } = require('./handlers/start.handler.js');
 const joinRequestHandler = require('./handlers/join-request.handler.js');
 const approveRequestsHandler = require('./handlers/approve-requests.handler.js');
-const { handleMenu, handleMenuCallback } = require('./handlers/menu.handler.js');
-const { handleSettings } = require('./handlers/settings.handler.js');
 // ... other handlers
 
 // Initialize bot
@@ -35,8 +34,7 @@ async function initialize() {
     const botInfo = await bot.telegram.getMe();
     logger.info(`Bot starting as @${botInfo.username}`, 'Bootstrap');
   } catch (error) {
-    logger.error('Bot initialization failed:', 'Bootstrap');
-    console.error('Detailed error:', error);
+    logger.error('Bot initialization failed:', 'Bootstrap', error);
     process.exit(1);
   }
 }
@@ -47,7 +45,6 @@ function registerMiddleware() {
   bot.use(loggerMiddleware);
   bot.use(authMiddleware); // Handles user identification
   bot.use(permissionMiddleware); // Handles command permissions
-  bot.use(updateActivityMiddleware); // Tracks user activity
 }
 
 function registerHandlers() {
@@ -56,29 +53,17 @@ function registerHandlers() {
   // Command Handlers
   bot.command('start', handleStart);
   bot.command('requests', approveRequestsHandler.handleRequestsCommand);
-  bot.command('settings', handleSettings);
-  bot.command('menu', handleMenu);
 
   // Callback Query Handlers (for inline buttons)
   bot.action('workflow:join_request', (ctx) => joinRequestHandler.startWorkflow(ctx));
   bot.action(/^workflow:join_request:(confirm|cancel)$/, (ctx) => joinRequestHandler.handleCallback(ctx));
   bot.action(/^request:(approve|reject):\d+$/, (ctx) => approveRequestsHandler.handleCallback(ctx));
-  bot.action(/^cmd_/, (ctx) => handleMenuCallback(ctx));
-  bot.action('menu_close', (ctx) => handleMenuCallback(ctx));
 
-  // Text Message Handler (for workflow steps and keyboard buttons)
+  // Text Message Handler (for workflow steps)
   bot.on('text', async (ctx, next) => {
     // If the message is a command, skip this handler
     if (ctx.message.text.startsWith('/')) return next();
 
-    const text = ctx.message.text.trim();
-
-    // Handle keyboard button presses
-    if (text === '⚙️ الإعدادات') {
-      return handleSettings(ctx);
-    }
-
-    // Handle workflow steps
     const state = await dbService.getConversationState(ctx.from.id);
     if (state && state.workflow_id === 'join_request') {
       await joinRequestHandler.handleStep(ctx, state);
@@ -116,8 +101,7 @@ async function start() {
     if (error.code === 'ELOCKED') {
       logger.error('Another instance is already running. Exiting.', 'Bootstrap');
     } else {
-      logger.error('Failed to start bot:', 'Bootstrap');
-      console.error('Detailed error:', error);
+      logger.error('Failed to start bot:', 'Bootstrap', error);
     }
     process.exit(1);
   }

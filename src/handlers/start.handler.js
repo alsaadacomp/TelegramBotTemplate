@@ -1,0 +1,149 @@
+/**
+ * Start Command Handler
+ * Handles /start command with smart welcome messages based on user role
+ * 
+ * @module handlers/start.handler
+ */
+
+const dbService = require('../services/database.service');
+const messageService = require('../services/message.service');
+const { buildMainKeyboard } = require('../keyboards/main.keyboard');
+const logger = require('../utils/logger.util');
+const { ROLES } = require('../../config/permissions.config');
+
+/**
+ * Handles the /start command.
+ * It relies on the authMiddleware to provide the user object (ctx.user).
+ * Based on the user's role, it routes to the appropriate welcome message.
+ * @param {object} ctx - Telegraf context.
+ */
+async function handleStart(ctx) {
+  try {
+    const { user } = ctx;
+    logger.command('info', `/start executed by ${user.telegram_id} (${user.role})`);
+
+    switch (user.role) {
+      case ROLES.VISITOR:
+        await showVisitorWelcome(ctx, user);
+        break;
+      case ROLES.ADMIN:
+        await showAdminWelcome(ctx, user);
+        break;
+      case ROLES.SUPER_ADMIN:
+        await showSuperAdminWelcome(ctx, user);
+        break;
+      default:
+        // Fallback for any unknown or unhandled roles
+        logger.warn(`Unhandled role '${user.role}' in start handler. Defaulting to visitor view.`);
+        await showVisitorWelcome(ctx, user);
+        break;
+    }
+  } catch (error) {
+    logger.error('Error in handleStart:', 'StartHandler', error);
+    await ctx.reply(messageService.get('error.generic'));
+  }
+}
+
+/**
+ * Displays the welcome message and a 'Request to Join' button for visitors.
+ * @param {object} ctx - Telegraf context.
+ * @param {object} user - The temporary user object.
+ */
+async function showVisitorWelcome(ctx, user) {
+  const message = messageService.get('welcome.visitor', { firstName: user.first_name || 'Guest' });
+  const keyboard = {
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: messageService.get('button.requestJoin'), callback_data: 'workflow:join_request' }]
+      ]
+    }
+  };
+  await ctx.reply(message, { ...keyboard, parse_mode: 'Markdown' });
+}
+
+/**
+ * Displays a personalized welcome message with quick stats for admins.
+ * @param {object} ctx - Telegraf context.
+ * @param {object} user - The user object.
+ */
+async function showAdminWelcome(ctx, user) {
+  const stats = await getQuickStats();
+  const message = messageService.get('welcome.admin', {
+    fullName: user.first_name || 'Admin',
+    activeAdmins: stats.activeAdmins,
+    pendingRequests: stats.pendingRequests,
+  });
+  const keyboard = buildMainKeyboard(ROLES.ADMIN);
+  await ctx.reply(message, { ...keyboard, parse_mode: 'Markdown' });
+}
+
+/**
+ * Displays a detailed welcome message with system stats for the super admin.
+ * @param {object} ctx - Telegraf context.
+ * @param {object} user - The user object.
+ */
+async function showSuperAdminWelcome(ctx, user) {
+  const stats = await getSystemStats();
+  const message = messageService.get('welcome.superAdmin', {
+    fullName: user.first_name || 'Super Admin',
+    totalAdmins: stats.totalAdmins || 0,
+    activeAdmins: stats.activeAdmins || 0,
+    inactiveAdmins: (stats.totalAdmins || 0) - (stats.activeAdmins || 0),
+    pendingRequests: stats.pendingRequests || 0,
+    dbSize: stats.dbSize || 'غير متاح',
+    lastActivity: stats.lastActivity || 'غير متاح'
+  });
+  const keyboard = buildMainKeyboard(ROLES.SUPER_ADMIN, { pendingRequests: stats.pendingRequests });
+  await ctx.reply(message, { ...keyboard, parse_mode: 'Markdown' });
+}
+
+// --- Helper functions for fetching stats ---
+
+async function getQuickStats() {
+  try {
+    const [activeAdmins, pendingRequests] = await Promise.all([
+      dbService.get("SELECT COUNT(*) as count FROM users WHERE status = 'active' AND role = ?", [ROLES.ADMIN]),
+      dbService.get("SELECT COUNT(*) as count FROM join_requests WHERE status = 'pending'")
+    ]);
+    return {
+      activeAdmins: activeAdmins.count || 0,
+      pendingRequests: pendingRequests.count || 0,
+    };
+  } catch (error) {
+    logger.error('Failed to get quick stats:', 'StartHandler', error);
+    return { activeAdmins: 0, pendingRequests: 0 };
+  }
+}
+
+async function getSystemStats() {
+  try {
+    const [totalAdmins, activeAdmins, inactiveAdmins, pendingRequests, dbSize, lastActivity] = await Promise.all([
+      dbService.get("SELECT COUNT(*) as count FROM users WHERE role = ? OR role = ?", [ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+      dbService.get("SELECT COUNT(*) as count FROM users WHERE (role = ? OR role = ?) AND status = 'active'", [ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+      dbService.get("SELECT COUNT(*) as count FROM users WHERE (role = ? OR role = ?) AND status != 'active'", [ROLES.ADMIN, ROLES.SUPER_ADMIN]),
+      dbService.get("SELECT COUNT(*) as count FROM join_requests WHERE status = 'pending'"),
+      dbService.getDatabaseSize(),
+      dbService.getLastActivityTime(),
+    ]);
+    return {
+      totalAdmins: totalAdmins.count || 0,
+      activeAdmins: activeAdmins.count || 0,
+      inactiveAdmins: inactiveAdmins.count || 0,
+      pendingRequests: pendingRequests.count || 0,
+      dbSize: dbSize || 'غير متاح',
+      lastActivity: lastActivity || 'لا يوجد',
+    };
+  } catch (error) {
+    logger.error('Failed to get system stats:', 'StartHandler', error);
+    return { 
+      totalAdmins: 0, 
+      activeAdmins: 0,
+      inactiveAdmins: 0,
+      pendingRequests: 0, 
+      dbSize: 'غير متاح',
+      lastActivity: 'غير متاح'
+    };
+  }
+}
+
+module.exports = { handleStart };

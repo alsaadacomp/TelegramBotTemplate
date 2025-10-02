@@ -1,10 +1,8 @@
 /**
  * Formatters Utility
- * 
- * Comprehensive formatting functions for various data types
+ * * Comprehensive formatting functions for various data types
  * Supports Arabic and English outputs
- * 
- * @module utils/formatters
+ * * @module utils/formatters
  */
 
 const logger = require('./logger.util');
@@ -33,8 +31,7 @@ const ARABIC_DAYS = [
  * @param {boolean} options.arabic - Use Arabic numerals (default: true)
  * @param {boolean} options.arabicMonths - Use Arabic month names (default: false)
  * @returns {string} Formatted date
- * 
- * Format patterns:
+ * * Format patterns:
  * - YYYY: Full year (2025)
  * - YY: Short year (25)
  * - MM: Month (01-12)
@@ -248,7 +245,12 @@ function formatFileSize(bytes, options = {}) {
     const units = ['بايت', 'كيلوبايت', 'ميجابايت', 'جيجابايت', 'تيرابايت'];
     const k = 1024;
     const i = Math.floor(Math.log(numBytes) / Math.log(k));
-    const value = (numBytes / Math.pow(k, i)).toFixed(decimals);
+    
+    // Convert to fixed decimal string, then replace decimal point if needed
+    let value = (numBytes / Math.pow(k, i)).toFixed(decimals);
+    if (arabic) {
+        value = value.replace('.', '٫'); // Arabic decimal separator
+    }
 
     const formatted = arabic ? toArabicNumbers(value) : value;
 

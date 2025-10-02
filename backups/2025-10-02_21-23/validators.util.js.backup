@@ -330,62 +330,6 @@ function validateTelegramId(id) {
 }
 
 /**
- * Validate full name (Arabic text with reasonable length)
- * @param {string} name - Full name to validate
- * @returns {boolean} True if valid
- */
-function validateFullName(name) {
-  try {
-    if (!name || typeof name !== 'string') {
-      return false;
-    }
-
-    const trimmed = name.trim();
-    
-    // Check length (between 3 and 50 characters)
-    if (trimmed.length < 3 || trimmed.length > 50) {
-      return false;
-    }
-
-    // Must contain at least 2 words (first name + last name)
-    const words = trimmed.split(/\s+/);
-    if (words.length < 2) {
-      return false;
-    }
-
-    // Validate as Arabic text
-    return validateArabicText(trimmed, { allowNumbers: false, allowPunctuation: false });
-  } catch (error) {
-    logger.error('Error validating full name', { error: error.message });
-    return false;
-  }
-}
-
-/**
- * Normalize phone number (convert Arabic numbers to English, remove separators)
- * @param {string} phone - Phone number to normalize
- * @returns {string} Normalized phone number
- */
-function normalizePhone(phone) {
-  try {
-    if (!phone || typeof phone !== 'string') {
-      return '';
-    }
-
-    // Normalize Arabic numbers to English
-    const normalized = normalizeArabicNumbers(phone);
-    
-    // Remove all non-digit characters except +
-    const cleaned = normalized.replace(/[^\d+]/g, '');
-    
-    return cleaned;
-  } catch (error) {
-    logger.error('Error normalizing phone', { error: error.message });
-    return phone;
-  }
-}
-
-/**
  * Validate text length
  * @param {string} text - Text to validate
  * @param {Object} options - Validation options
@@ -576,8 +520,6 @@ module.exports = {
   validateDate,
   validateUrl,
   validateTelegramId,
-  validateFullName,
-  normalizePhone,
   validateLength,
   validatePattern,
   validateRequired,

@@ -2,9 +2,11 @@
 
 /**
  * Database Service - Complete Implementation
- * * Provides high-level database operations for the bot
+ * 
+ * Provides high-level database operations for the bot
  * Handles users, sections, logs, settings, and conversation states
- * * @module DatabaseService
+ * 
+ * @module DatabaseService
  */
 
 const DatabaseAdapter = require('../core/database-adapter.core');
@@ -13,7 +15,7 @@ const UserModel = require('../models/user.model');
 const SectionModel = require('../models/section.model');
 const logger = require('../utils/logger.util');
 const DatabaseConfig = require('../../config/database.config');
-// const migrationRunner = require('../utils/migrate');
+const migrationRunner = require('../utils/migrate');
 
 class DatabaseService {
   constructor() {
@@ -54,8 +56,8 @@ class DatabaseService {
       logger.database('info', 'DatabaseService: All tables initialized');
       
       // Run database migrations
-      // logger.database('info', 'DatabaseService: Running migrations...');
-      // await migrationRunner.initialize();
+      logger.database('info', 'DatabaseService: Running migrations...');
+      await migrationRunner.initialize();
       
       this.isInitialized = true;
       logger.info('DatabaseService: initialized successfully');
@@ -63,16 +65,6 @@ class DatabaseService {
       return true;
     } catch (error) {
       logger.database('error', 'DatabaseService: Initialization failed', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create database adapter based on configuration
-   * @private
-   * @returns {DatabaseAdapter} Database adapter instance
-   */
-  _createAdapter() {
     const mode = this.config.mode;
     logger.database('info', `DatabaseService: Creating adapter for mode: ${mode}`);
     switch (mode) {
@@ -445,20 +437,11 @@ class DatabaseService {
         ON CONFLICT(key) DO UPDATE SET
           value = excluded.value,
           type = excluded.type,
-          description = COALESCE(excluded.description, description),
+          description = excluded.description,
           updated_at = CURRENT_TIMESTAMP
       `;
       const params = [key, this._stringifySettingValue(value, type), type, description];
-      await this.adapter.raw(query, params);
-      logger.database('info', 'DatabaseService: Setting saved', { key });
-      return true;
-    } catch (error) {
-      logger.error('DatabaseService: Failed to set setting', error);
-      throw error;
-    }
-  }
 
-  async getAllSettings() {
     try {
       const query = 'SELECT * FROM settings';
       const results = await this.adapter.query(query);
@@ -572,30 +555,6 @@ class DatabaseService {
     }
   }
 
-  /**
-   * Provides a 'run' alias for 'raw' to be compatible with migration runner.
-   */
-  async run(sql, params) {
-    try {
-      return await this.adapter.raw(sql, params);
-    } catch (error) {
-      logger.error('DatabaseService: Failed to run command', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Provides an 'all' alias for 'query' to be compatible with migration runner.
-   */
-  async all(sql, params) {
-    try {
-      return await this.adapter.query(sql, params);
-    } catch (error) {
-      logger.error('DatabaseService: Failed to run all command', error);
-      throw error;
-    }
-  }
-
   // =======================================
   // Join Requests Management
   // =======================================
@@ -670,8 +629,7 @@ class DatabaseService {
         ORDER BY requested_at DESC 
         LIMIT 1
       `;
-      const rows = await this.adapter.raw(query, [telegramId]);
-      const request = rows.length > 0 ? rows[0] : null;
+      const request = await this.adapter.queryOne(query, [telegramId]);
       if (request && request.metadata) {
         request.metadata = JSON.parse(request.metadata);
       }
@@ -770,6 +728,10 @@ class DatabaseService {
     }
   }
 
+  /**
+   * Get last activity time
+   * @returns {Promise<string>}
+   */
   /**
    * Get the size of the database file
    * @returns {Promise<string>} Formatted database size (e.g., "2.5 MB")
@@ -872,7 +834,30 @@ class DatabaseService {
     }
   }
 
-
+  /**
+   * Get database size
+   * @returns {Promise<string>}
+   */
+  async getDatabaseSize() {
+    try {
+      if (this.config.mode !== 'sqlite') return 'غير متاح';
+      
+      const fs = require('fs');
+      const path = this.config.sqlite.database;
+      
+      if (!fs.existsSync(path)) return 'غير متاح';
+      
+      const stats = fs.statSync(path);
+      const sizeInBytes = stats.size;
+      
+      if (sizeInBytes < 1024) return `${sizeInBytes} بايت`;
+      if (sizeInBytes < 1048576) return `${(sizeInBytes / 1024).toFixed(2)} كيلوبايت`;
+      return `${(sizeInBytes / 1048576).toFixed(2)} ميجابايت`;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to get database size', error);
+      return 'غير متاح';
+    }
+  }
 }
 
 module.exports = new DatabaseService();
