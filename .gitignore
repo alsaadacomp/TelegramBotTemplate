@@ -162,3 +162,8 @@ docs/generated/
 # package-lock.json
 # yarn.lock
 # pnpm-lock.yaml
+
+# Backup files and directories
+/backups/
+*.bak
+*.backup
