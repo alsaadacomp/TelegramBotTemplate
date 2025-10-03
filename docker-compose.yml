@@ -1,0 +1,102 @@
+# Telegram Bot Template - Docker Compose
+# Version: 1.0
+# Updated: 2025-10-03
+
+version: '3.8'
+
+services:
+  telegram-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-bot
+    restart: unless-stopped
+    
+    # Environment configuration
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - BOT_TIMEZONE=Asia/Riyadh
+      - WAIT_FOR_DB=false
+      - INIT_DB=true
+      - RUN_MIGRATIONS=true
+    
+    # Volume mounts for persistence
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - /etc/localtime:/etc/localtime:ro
+    
+    # Network configuration
+    networks:
+      - bot-network
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
+  # Automated backup service (optional)
+  backup:
+    image: alpine:latest
+    container_name: telegram-bot-backup
+    restart: unless-stopped
+    volumes:
+      - ./data:/backup/data
+      - /var/log/backups:/backup/logs:ro
+    command: >
+      sh -c "
+        apk add --no-cache dcron &&
+        echo '0 2 * * * /backup-data.sh' | crontab -
+        crond -f
+      "
+    profiles:
+      - backup
+    networks:
+      - bot-network
+
+  # Monitoring with Portainer (optional)
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: telegram-bot-portainer
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    profiles:
+      - monitor
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge
+    name: telegram-bot-network
+
+volumes:
+  portainer_data:
+    name: telegram-bot-portainer-data
