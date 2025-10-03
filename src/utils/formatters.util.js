@@ -301,14 +301,14 @@ function truncateText(text, length = 50, options = {}) {
 /**
  * Format currency
  * @param {number} amount - Amount to format
- * @param {string} currency - Currency code (default: 'SAR')
+ * @param {string} currency - Currency code (default: 'EGP')
  * @param {Object} options - Formatting options
  * @param {boolean} options.arabic - Use Arabic numerals (default: true)
  * @param {number} options.decimals - Decimal places (default: 2)
  * @param {boolean} options.symbol - Show currency symbol (default: true)
  * @returns {string} Formatted currency
  */
-function formatCurrency(amount, currency = 'SAR', options = {}) {
+function formatCurrency(amount, currency = 'EGP', options = {}) {
   try {
     const { arabic = true, decimals = 2, symbol = true } = options;
 

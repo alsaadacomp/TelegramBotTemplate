@@ -13,7 +13,7 @@ describe('Helpers Utility', () => {
 
     test('should generate an ID with a prefix', () => {
       const id = helpers.generateId('user');
-      expect(id).startsWith('user_');
+      expect(id.startsWith('user_')).toBe(true);
     });
   });
 

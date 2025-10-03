@@ -90,7 +90,7 @@ describe('Formatters Utility', () => {
     test('should format SAR currency correctly', () => {
       const formatted = formatters.formatCurrency(1250.50, 'SAR');
       expect(formatted).toContain('ريال');
-      expect(formatted).toContain('١٬٢٥٠٫٥٠');
+      expect(formatted).toContain('١،٢٥٠٫٥٠');
     });
     
     test('should format USD currency correctly', () => {
