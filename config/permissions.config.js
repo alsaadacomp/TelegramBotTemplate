@@ -112,6 +112,28 @@ const config = {
     const role = this.getRole(roleName);
     return role && role.level >= this.roles.ADMIN.level;
   },
+
+  getPermissionsForRole(roleName) {
+    const rolePerms = this.rolePermissions[roleName] || [];
+    if (rolePerms.includes('*')) {
+      return Object.values(this.categories).flatMap(category => category.permissions);
+    }
+    
+    const permissions = [];
+    rolePerms.forEach(perm => {
+      if (perm.endsWith('.*')) {
+        const category = perm.replace('.*', '');
+        const categoryObj = Object.values(this.categories).find(cat => cat.name === category);
+        if (categoryObj) {
+          permissions.push(...categoryObj.permissions);
+        }
+      } else {
+        permissions.push(perm);
+      }
+    });
+    
+    return [...new Set(permissions)]; // Remove duplicates
+  },
 };
 
 // =======================================

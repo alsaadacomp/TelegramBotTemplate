@@ -872,6 +872,35 @@ class DatabaseService {
     }
   }
 
+  /**
+   * Close database connection
+   * @returns {Promise<void>}
+   */
+  async close() {
+    try {
+      if (this.adapter && this.adapter.close) {
+        await this.adapter.close();
+        logger.database('info', 'DatabaseService: Connection closed');
+      }
+      this.isInitialized = false;
+    } catch (error) {
+      logger.error('DatabaseService: Failed to close connection', error);
+    }
+  }
+
+  /**
+   * Check if database is connected
+   * @returns {Promise<boolean>}
+   */
+  async isConnected() {
+    try {
+      if (!this.adapter) return false;
+      return await this.adapter.isConnected();
+    } catch (error) {
+      logger.error('DatabaseService: Failed to check connection', error);
+      return false;
+    }
+  }
 
 }
 

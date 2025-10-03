@@ -613,6 +613,37 @@ class SQLiteAdapter extends DatabaseAdapter {
 
     console.log('SQLiteAdapter: Database configured');
   }
+
+  /**
+   * Close database connection
+   * @returns {Promise<void>}
+   */
+  async close() {
+    if (!this.connected || !this.db) {
+      return;
+    }
+
+    return new Promise((resolve, reject) => {
+      this.db.close((error) => {
+        if (error) {
+          reject(error);
+        } else {
+          this.connected = false;
+          this.db = null;
+          console.log('SQLiteAdapter: Connection closed');
+          resolve();
+        }
+      });
+    });
+  }
+
+  /**
+   * Check if database is connected
+   * @returns {Promise<boolean>}
+   */
+  async isConnected() {
+    return this.connected && this.db !== null;
+  }
 }
 
 module.exports = SQLiteAdapter;

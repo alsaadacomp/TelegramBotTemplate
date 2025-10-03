@@ -26,10 +26,8 @@ const ARABIC_DAYS = [
 /**
  * Format date
  * @param {Date|string|number} date - Date to format
+ * @param {string} locale - Locale ('ar' or 'en')
  * @param {string} format - Format pattern (default: 'YYYY-MM-DD')
- * @param {Object} options - Formatting options
- * @param {boolean} options.arabic - Use Arabic numerals (default: true)
- * @param {boolean} options.arabicMonths - Use Arabic month names (default: false)
  * @returns {string} Formatted date
  * * Format patterns:
  * - YYYY: Full year (2025)
@@ -40,19 +38,20 @@ const ARABIC_DAYS = [
  * - mm: Minutes (00-59)
  * - ss: Seconds (00-59)
  */
-function formatDate(date, format = 'YYYY-MM-DD', options = {}) {
+function formatDate(date, locale = 'ar', format = 'YYYY-MM-DD') {
   try {
-    const { arabic = true, arabicMonths = false } = options;
+    const arabic = locale === 'ar';
+    const arabicMonths = locale === 'ar';
 
     if (!date) {
-      return '';
+      return arabic ? 'تاريخ غير صالح' : 'Invalid date';
     }
 
     const dateObj = new Date(date);
 
     if (isNaN(dateObj.getTime())) {
       logger.warn('Invalid date for formatting', { date });
-      return '';
+      return arabic ? 'تاريخ غير صالح' : 'Invalid date';
     }
 
     let formatted = format;
@@ -110,32 +109,31 @@ function formatDate(date, format = 'YYYY-MM-DD', options = {}) {
     return formatted;
   } catch (error) {
     logger.error('Error formatting date', { error: error.message, date });
-    return '';
+    return locale === 'ar' ? 'تاريخ غير صالح' : 'Invalid date';
   }
 }
 
 /**
  * Format time
  * @param {Date|string|number} time - Time to format
- * @param {Object} options - Formatting options
- * @param {boolean} options.arabic - Use Arabic numerals (default: true)
- * @param {boolean} options.seconds - Include seconds (default: false)
- * @param {boolean} options.ampm - Use AM/PM format (default: false)
+ * @param {string} locale - Locale ('ar' or 'en')
+ * @param {string} format - Format ('12' or '24')
  * @returns {string} Formatted time
  */
-function formatTime(time, options = {}) {
+function formatTime(time, locale = 'ar', format = '24') {
   try {
-    const { arabic = true, seconds = false, ampm = false } = options;
+    const arabic = locale === 'ar';
+    const ampm = format === '12';
 
     if (!time) {
-      return '';
+      return arabic ? 'وقت غير صالح' : 'Invalid time';
     }
 
     const dateObj = new Date(time);
 
     if (isNaN(dateObj.getTime())) {
       logger.warn('Invalid time for formatting', { time });
-      return '';
+      return arabic ? 'وقت غير صالح' : 'Invalid time';
     }
 
     let hours = dateObj.getHours();
@@ -155,11 +153,6 @@ function formatTime(time, options = {}) {
 
     formatted = `${hoursPadded}:${minutesPadded}`;
 
-    if (seconds) {
-      const secsPadded = String(secs).padStart(2, '0');
-      formatted += `:${secsPadded}`;
-    }
-
     formatted += period;
 
     if (arabic) {
@@ -169,7 +162,7 @@ function formatTime(time, options = {}) {
     return formatted;
   } catch (error) {
     logger.error('Error formatting time', { error: error.message, time });
-    return '';
+    return locale === 'ar' ? 'وقت غير صالح' : 'Invalid time';
   }
 }
 
@@ -239,10 +232,10 @@ function formatFileSize(bytes, options = {}) {
     const numBytes = Number(bytes);
 
     if (numBytes === 0) {
-      return arabic ? '٠ بايت' : '0 بايت';
+      return arabic ? '٠ بايت' : '0 B';
     }
 
-    const units = ['بايت', 'كيلوبايت', 'ميجابايت', 'جيجابايت', 'تيرابايت'];
+    const units = arabic ? ['بايت', 'كيلوبايت', 'ميجابايت', 'جيجابايت', 'تيرابايت'] : ['B', 'KB', 'MB', 'GB', 'TB'];
     const k = 1024;
     const i = Math.floor(Math.log(numBytes) / Math.log(k));
     
@@ -250,11 +243,10 @@ function formatFileSize(bytes, options = {}) {
     let value = (numBytes / Math.pow(k, i)).toFixed(decimals);
     if (arabic) {
         value = value.replace('.', '٫'); // Arabic decimal separator
+        value = toArabicNumbers(value);
     }
 
-    const formatted = arabic ? toArabicNumbers(value) : value;
-
-    return `${formatted} ${units[i]}`;
+    return `${value} ${units[i]}`;
   } catch (error) {
     logger.error('Error formatting file size', { error: error.message, bytes });
     return '';
@@ -265,15 +257,11 @@ function formatFileSize(bytes, options = {}) {
  * Truncate text to specified length
  * @param {string} text - Text to truncate
  * @param {number} length - Maximum length (default: 50)
- * @param {Object} options - Truncation options
- * @param {string} options.suffix - Suffix to add when truncated (default: '...')
- * @param {boolean} options.breakWord - Break in middle of word (default: false)
+ * @param {string} suffix - Suffix to add when truncated (default: '...')
  * @returns {string} Truncated text
  */
-function truncateText(text, length = 50, options = {}) {
+function truncateText(text, length = 50, suffix = '...') {
   try {
-    const { suffix = '...', breakWord = false } = options;
-
     if (!text || typeof text !== 'string') {
       return '';
     }
@@ -284,11 +272,9 @@ function truncateText(text, length = 50, options = {}) {
 
     let truncated = text.slice(0, length);
 
-    if (!breakWord) {
-      const lastSpace = truncated.lastIndexOf(' ');
-      if (lastSpace > 0) {
-        truncated = truncated.slice(0, lastSpace);
-      }
+    const lastSpace = truncated.lastIndexOf(' ');
+    if (lastSpace > 0) {
+      truncated = truncated.slice(0, lastSpace);
     }
 
     return truncated + suffix;
@@ -301,16 +287,14 @@ function truncateText(text, length = 50, options = {}) {
 /**
  * Format currency
  * @param {number} amount - Amount to format
- * @param {string} currency - Currency code (default: 'EGP')
- * @param {Object} options - Formatting options
- * @param {boolean} options.arabic - Use Arabic numerals (default: true)
- * @param {number} options.decimals - Decimal places (default: 2)
- * @param {boolean} options.symbol - Show currency symbol (default: true)
+ * @param {string} currency - Currency code (default: 'SAR')
+ * @param {string} locale - Locale ('ar' or 'en')
  * @returns {string} Formatted currency
  */
-function formatCurrency(amount, currency = 'EGP', options = {}) {
+function formatCurrency(amount, currency = 'SAR', locale = 'ar') {
   try {
-    const { arabic = true, decimals = 2, symbol = true } = options;
+    const arabic = locale === 'ar';
+    const decimals = 2;
 
     if (amount === null || amount === undefined || isNaN(amount)) {
       return '';
@@ -319,10 +303,10 @@ function formatCurrency(amount, currency = 'EGP', options = {}) {
     const numAmount = Number(amount);
 
     // Format with thousand separators
-    const formatted = formatArabicNumber(numAmount, { decimals, arabic });
-
-    if (!symbol) {
-      return formatted;
+    let formatted = numAmount.toFixed(decimals);
+    if (arabic) {
+      formatted = toArabicNumbers(formatted);
+      formatted = formatted.replace('.', '٫'); // Arabic decimal separator
     }
 
     const currencySymbols = {
@@ -536,6 +520,26 @@ function formatRelativeTime(date, options = {}) {
   }
 }
 
+/**
+ * Pluralize words based on count
+ * @param {number} count - Count to check
+ * @param {string} singular - Singular form
+ * @param {string} plural - Plural form
+ * @param {string} locale - Locale ('ar' or 'en')
+ * @returns {string} Pluralized word
+ */
+function pluralize(count, singular, plural, locale = 'ar') {
+  try {
+    if (count === 1) {
+      return singular;
+    }
+    return plural;
+  } catch (error) {
+    logger.error('Error pluralizing word', { error: error.message, count, singular, plural });
+    return plural;
+  }
+}
+
 module.exports = {
   formatDate,
   formatTime,
@@ -547,5 +551,6 @@ module.exports = {
   formatPhoneNumber,
   capitalizeFirst,
   slugify,
-  formatRelativeTime
+  formatRelativeTime,
+  pluralize
 };

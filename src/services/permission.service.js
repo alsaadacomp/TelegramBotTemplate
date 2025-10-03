@@ -159,6 +159,108 @@ class PermissionService {
   }
 
   /**
+   * Checks if a user has access to a specific permission.
+   * @param {number} telegramId - The user's Telegram ID.
+   * @param {string} permission - The permission to check.
+   * @returns {Promise<boolean>}
+   */
+  async checkAccess(telegramId, permission) {
+    try {
+      const role = await this.getUserRole(telegramId);
+      return await this.hasPermission(role, permission);
+    } catch (error) {
+      logger.error(`Error checking access for user ${telegramId}: ${error.message}`, 'Permission');
+      return false;
+    }
+  }
+
+  /**
+   * Gets all permissions for a user.
+   * @param {number} telegramId - The user's Telegram ID.
+   * @returns {Promise<Array<string>>}
+   */
+  async getUserPermissions(telegramId) {
+    try {
+      const role = await this.getUserRole(telegramId);
+      return this.getRolePermissions(role);
+    } catch (error) {
+      logger.error(`Error getting permissions for user ${telegramId}: ${error.message}`, 'Permission');
+      return [];
+    }
+  }
+
+  /**
+   * Checks if user has any of the specified permissions.
+   * @param {number} telegramId - The user's Telegram ID.
+   * @param {Array<string>} permissions - Array of permissions to check.
+   * @returns {Promise<boolean>}
+   */
+  async hasAnyPermission(telegramId, permissions) {
+    try {
+      const role = await this.getUserRole(telegramId);
+      return permissions.some(permission => permissionsConfig.hasPermission(role, permission));
+    } catch (error) {
+      logger.error(`Error checking any permission for user ${telegramId}: ${error.message}`, 'Permission');
+      return false;
+    }
+  }
+
+  /**
+   * Checks if user has all of the specified permissions.
+   * @param {number} telegramId - The user's Telegram ID.
+   * @param {Array<string>} permissions - Array of permissions to check.
+   * @returns {Promise<boolean>}
+   */
+  async hasAllPermissions(telegramId, permissions) {
+    try {
+      const role = await this.getUserRole(telegramId);
+      return permissions.every(permission => permissionsConfig.hasPermission(role, permission));
+    } catch (error) {
+      logger.error(`Error checking all permissions for user ${telegramId}: ${error.message}`, 'Permission');
+      return false;
+    }
+  }
+
+  /**
+   * Gets all permissions for a specific role.
+   * @param {string} role - The role name.
+   * @returns {Array<string>}
+   */
+  getRolePermissions(role) {
+    try {
+      return permissionsConfig.getPermissionsForRole(role);
+    } catch (error) {
+      logger.error(`Error getting permissions for role ${role}: ${error.message}`, 'Permission');
+      return [];
+    }
+  }
+
+  /**
+   * Validates if a role is valid.
+   * @param {string} role - The role to validate.
+   * @returns {boolean}
+   */
+  isValidRole(role) {
+    return Object.values(permissionsConfig.ROLES).includes(role);
+  }
+
+  /**
+   * Gets all available roles.
+   * @returns {Array<string>}
+   */
+  getAllRoles() {
+    return Object.values(permissionsConfig.ROLES);
+  }
+
+  /**
+   * Gets all available permissions.
+   * @returns {Array<string>}
+   */
+  getAllPermissions() {
+    return Object.keys(permissionsConfig.PERMISSIONS);
+  }
+
+  /**
    * Invalidates all caches related to a user.
    * @param {number} telegramId - The user's Telegram ID.
    */

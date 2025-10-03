@@ -346,6 +346,112 @@ class ErrorHandler {
       { originalError: error.name }
     );
   }
+
+  /**
+   * Handle error and return formatted response
+   */
+  static handleError(error) {
+    if (error instanceof AppError) {
+      return {
+        message: error.userMessage,
+        code: error.code,
+        statusCode: error.statusCode
+      };
+    }
+
+    // Handle different error types
+    if (error.name === 'ValidationError') {
+      return {
+        message: '❌ البيانات المدخلة غير صحيحة',
+        code: 'VALIDATION_ERROR',
+        statusCode: 400
+      };
+    }
+
+    if (error.name === 'DatabaseError') {
+      return {
+        message: '⚠️ حدث خطأ في قاعدة البيانات',
+        code: 'DATABASE_ERROR',
+        statusCode: 500
+      };
+    }
+
+    if (error.name === 'NetworkError') {
+      return {
+        message: '🌐 خطأ في الشبكة',
+        code: 'NETWORK_ERROR',
+        statusCode: 503
+      };
+    }
+
+    return {
+      message: '❌ حدث خطأ غير متوقع',
+      code: 'UNKNOWN_ERROR',
+      statusCode: 500
+    };
+  }
+
+  /**
+   * Format error with context
+   */
+  static formatError(error, context = null) {
+    const result = this.handleError(error);
+    
+    if (context) {
+      result.context = context;
+    }
+    
+    return result;
+  }
+
+  /**
+   * Check if error is retryable
+   */
+  static isRetryableError(error) {
+    const retryableErrors = [
+      'NetworkError',
+      'ExternalServiceError',
+      'DatabaseError'
+    ];
+    
+    return retryableErrors.includes(error.name);
+  }
+
+  /**
+   * Get error code
+   */
+  static getErrorCode(error) {
+    if (error instanceof AppError) {
+      return error.code;
+    }
+
+    const errorCodes = {
+      'ValidationError': 'VALIDATION_ERROR',
+      'DatabaseError': 'DATABASE_ERROR',
+      'NetworkError': 'NETWORK_ERROR',
+      'PermissionError': 'PERMISSION_ERROR'
+    };
+
+    return errorCodes[error.name] || 'UNKNOWN_ERROR';
+  }
+
+  /**
+   * Log error with proper format
+   */
+  static logError(error, context = null) {
+    const errorInfo = {
+      name: error.name,
+      message: error.message,
+      code: this.getErrorCode(error),
+      stack: error.stack
+    };
+
+    if (context) {
+      errorInfo.context = context;
+    }
+
+    Logger.error('Error occurred', errorInfo);
+  }
 }
 
 /**
@@ -403,5 +509,12 @@ module.exports = {
   wrapAsync,
   wrapMiddleware,
   wrapCommand,
-  wrapAction
+  wrapAction,
+
+  // Utility functions
+  handleError: ErrorHandler.handleError,
+  formatError: ErrorHandler.formatError,
+  isRetryableError: ErrorHandler.isRetryableError,
+  getErrorCode: ErrorHandler.getErrorCode,
+  logError: ErrorHandler.logError
 };
