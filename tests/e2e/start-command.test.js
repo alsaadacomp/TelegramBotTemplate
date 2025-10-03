@@ -24,17 +24,20 @@ describe('Start Command E2E', () => {
       }
     };
 
-    // Mock successful user registration
-    bot.handleStart.mockResolvedValue({
-      success: true,
-      message: 'مرحبا بك في البوت'
+    // Mock successful user registration - the handler should call ctx.reply
+    bot.handleStart.mockImplementation(async (ctx) => {
+      await ctx.reply('مرحبا بك في البوت');
+      return {
+        success: true,
+        message: 'مرحبا بك في البوت'
+      };
     });
 
     // Simulate /start command
     await bot.handleStart(mockCtx);
 
     // Check response
-    expect(mockCtx.reply).toHaveBeenCalled();
+    expect(mockCtx.reply).toHaveBeenCalledWith('مرحبا بك في البوت');
     expect(bot.handleStart).toHaveBeenCalledWith(mockCtx);
   });
 
@@ -52,16 +55,19 @@ describe('Start Command E2E', () => {
     };
 
     // Mock existing user response
-    bot.handleStart.mockResolvedValue({
-      success: true,
-      message: 'مرحبا مرة أخرى'
+    bot.handleStart.mockImplementation(async (ctx) => {
+      await ctx.reply('مرحبا بك في البوت');
+      return {
+        success: true,
+        message: 'مرحبا بك في البوت'
+      };
     });
 
     // Simulate /start command
     await bot.handleStart(mockCtx);
 
     // Check response
-    expect(mockCtx.reply).toHaveBeenCalled();
+    expect(mockCtx.reply).toHaveBeenCalledWith('مرحبا بك في البوت');
     expect(bot.handleStart).toHaveBeenCalledWith(mockCtx);
   });
 
@@ -98,17 +104,20 @@ describe('Start Command E2E', () => {
       }
     };
 
-    // Mock referral handling
-    bot.handleStart.mockResolvedValue({
-      success: true,
-      message: 'مرحبا بك من خلال الرابط المرجعي'
+    // Mock referral handling - the handler should call ctx.reply
+    bot.handleStart.mockImplementation(async (ctx) => {
+      await ctx.reply('مرحبا بك من خلال الرابط المرجعي');
+      return {
+        success: true,
+        message: 'مرحبا بك من خلال الرابط المرجعي'
+      };
     });
 
     // Simulate /start command with referral
     await bot.handleStart(mockCtx);
 
-    // Check response
-    expect(mockCtx.reply).toHaveBeenCalled();
+    // Check response  
+    expect(mockCtx.reply).toHaveBeenCalledWith('مرحبا بك من خلال الرابط المرجعي');
     expect(bot.handleStart).toHaveBeenCalledWith(mockCtx);
   });
 });

@@ -20,7 +20,7 @@ describe('Message Service Integration', () => {
     await messageService.sendMessage(mockCtx, message);
     
     // Check if reply was called
-    expect(mockCtx.reply).toHaveBeenCalledWith(message);
+    expect(mockCtx.reply).toHaveBeenCalledWith(message, {});
     
     // Check if conversation state was cached
     const conversationState = cacheService.getConversation(userId);
@@ -112,6 +112,6 @@ describe('Message Service Integration', () => {
     
     // Check if message was formatted correctly
     const expectedMessage = 'مرحبا أحمد، مرحبا بك في بوت السعادة';
-    expect(mockCtx.reply).toHaveBeenCalledWith(expectedMessage);
+    expect(mockCtx.reply).toHaveBeenCalledWith(expectedMessage, {});
   });
 });

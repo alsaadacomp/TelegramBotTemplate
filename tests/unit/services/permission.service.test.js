@@ -1,6 +1,18 @@
 const permissionService = require('../../../src/services/permission.service');
+const databaseService = require('../../../src/services/database.service');
 
 describe('Permission Service', () => {
+  beforeAll(async () => {
+    // Initialize database service for tests
+    await databaseService.initialize();
+  });
+
+  afterAll(async () => {
+    // Clean up database connection
+    if (databaseService.adapter && typeof databaseService.adapter.close === 'function') {
+      await databaseService.adapter.close();
+    }
+  });
   describe('checkAccess', () => {
     test('should allow admin access to all permissions', async () => {
       const hasAccess = await permissionService.checkAccess(123, 'general.help');

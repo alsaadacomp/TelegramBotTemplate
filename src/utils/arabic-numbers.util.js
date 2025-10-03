@@ -109,6 +109,8 @@ function formatNumber(number, options = {}) {
 // Aliases for compatibility
 const normalizeArabicNumbers = toEnglish;
 const toArabicNumbers = toArabic;
+const convertToArabicNumbers = toArabic;
+const convertToEnglishNumbers = toEnglish;
 
 module.exports = {
   // Main functions
@@ -120,6 +122,8 @@ module.exports = {
   // Aliases for compatibility
   normalizeArabicNumbers,
   toArabicNumbers,
+  convertToArabicNumbers,
+  convertToEnglishNumbers,
   
   // Constants
   ARABIC_NUMERALS,

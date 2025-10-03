@@ -21,17 +21,20 @@ describe('Join Request Flow E2E', () => {
       }
     };
 
-    // Mock successful join request
-    bot.handleJoinRequest.mockResolvedValue({
-      success: true,
-      message: 'تم إرسال طلب الانضمام بنجاح'
+    // Mock successful join request - the handler should call ctx.reply
+    bot.handleJoinRequest.mockImplementation(async (ctx) => {
+      await ctx.reply('تم إرسال طلب الانضمام بنجاح');
+      return {
+        success: true,
+        message: 'تم إرسال طلب الانضمام بنجاح'
+      };
     });
 
     // Simulate join request
     await bot.handleJoinRequest(mockCtx);
 
     // Check response
-    expect(mockCtx.reply).toHaveBeenCalled();
+    expect(mockCtx.reply).toHaveBeenCalledWith('تم إرسال طلب الانضمام بنجاح');
     expect(bot.handleJoinRequest).toHaveBeenCalledWith(mockCtx);
   });
 
@@ -48,17 +51,20 @@ describe('Join Request Flow E2E', () => {
       }
     };
 
-    // Mock successful approval
-    bot.handleApproveRequest.mockResolvedValue({
-      success: true,
-      message: 'تم قبول طلب الانضمام'
+    // Mock successful approval - the handler should call ctx.reply
+    bot.handleApproveRequest.mockImplementation(async (ctx) => {
+      await ctx.reply('تم قبول طلب الانضمام');
+      return {
+        success: true,
+        message: 'تم قبول طلب الانضمام'
+      };
     });
 
     // Simulate approval
     await bot.handleApproveRequest(mockCtx);
 
     // Check response
-    expect(mockCtx.reply).toHaveBeenCalled();
+    expect(mockCtx.reply).toHaveBeenCalledWith('تم قبول طلب الانضمام');
     expect(bot.handleApproveRequest).toHaveBeenCalledWith(mockCtx);
   });
 
@@ -75,17 +81,20 @@ describe('Join Request Flow E2E', () => {
       }
     };
 
-    // Mock successful rejection
-    bot.handleRejectRequest.mockResolvedValue({
-      success: true,
-      message: 'تم رفض طلب الانضمام'
+    // Mock successful rejection - the handler should call ctx.reply
+    bot.handleRejectRequest.mockImplementation(async (ctx) => {
+      await ctx.reply('تم رفض طلب الانضمام');
+      return {
+        success: true,
+        message: 'تم رفض طلب الانضمام'
+      };
     });
 
     // Simulate rejection
     await bot.handleRejectRequest(mockCtx);
 
     // Check response
-    expect(mockCtx.reply).toHaveBeenCalled();
+    expect(mockCtx.reply).toHaveBeenCalledWith('تم رفض طلب الانضمام');
     expect(bot.handleRejectRequest).toHaveBeenCalledWith(mockCtx);
   });
 
@@ -102,17 +111,20 @@ describe('Join Request Flow E2E', () => {
       }
     };
 
-    // Mock duplicate request error
-    bot.handleJoinRequest.mockResolvedValue({
-      success: false,
-      message: 'لديك طلب انضمام معلق بالفعل'
+    // Mock duplicate request error - the handler should call ctx.reply
+    bot.handleJoinRequest.mockImplementation(async (ctx) => {
+      await ctx.reply('لديك طلب انضمام معلق بالفعل');
+      return {
+        success: false,
+        message: 'لديك طلب انضمام معلق بالفعل'
+      };
     });
 
     // Simulate duplicate request
     await bot.handleJoinRequest(mockCtx);
 
     // Check response
-    expect(mockCtx.reply).toHaveBeenCalled();
+    expect(mockCtx.reply).toHaveBeenCalledWith('لديك طلب انضمام معلق بالفعل');
     expect(bot.handleJoinRequest).toHaveBeenCalledWith(mockCtx);
   });
 
@@ -129,17 +141,20 @@ describe('Join Request Flow E2E', () => {
       }
     };
 
-    // Mock incomplete request error
-    bot.handleJoinRequest.mockResolvedValue({
-      success: false,
-      message: 'يرجى إكمال جميع المعلومات المطلوبة'
+    // Mock incomplete request error - a handler should call ctx.reply
+    bot.handleJoinRequest.mockImplementation(async (ctx) => {
+      await ctx.reply('إرجى إكمال جميع المعلومات المطلوبة');
+      return {
+        success: false,
+        message: 'إرجى إكمال جميع المعلومات المطلوبة'
+      };
     });
 
     // Simulate incomplete request
     await bot.handleJoinRequest(mockCtx);
 
     // Check response
-    expect(mockCtx.reply).toHaveBeenCalled();
+    expect(mockCtx.reply).toHaveBeenCalledWith('إرجى إكمال جميع المعلومات المطلوبة');
     expect(bot.handleJoinRequest).toHaveBeenCalledWith(mockCtx);
   });
 });

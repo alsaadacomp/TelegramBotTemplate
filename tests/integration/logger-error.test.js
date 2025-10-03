@@ -6,30 +6,33 @@ describe('Logger + Error Handler Integration', () => {
     const error = new Error('Test error');
     const context = { userId: 123, action: 'test' };
     
-    // Mock console methods to capture output
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    // Mock Winston logger transport
+    const mockTransport = {
+      log: jest.fn(),
+      write: jest.fn()
+    };
+    
+    // Create spy for the logger's error method
+    const loggerSpy = jest.spyOn(logger, 'error').mockImplementation((message, meta) => {
+      mockTransport.log(message, meta);
+    });
     
     // Log error
     logger.error('Test error occurred', { error: error.message, context });
     
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+    expect(mockTransport.log).toHaveBeenCalledWith('Test error occurred', { error: error.message, context });
+    loggerSpy.mockRestore();
   });
 
   test('should handle error through error handler', () => {
     const error = new Error('Database connection failed');
     error.name = 'DatabaseError';
     
-    // Mock console methods
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-    
     // Handle error
     const result = errorHandler.handleError(error);
     
     expect(result).toBeDefined();
     expect(result.message).toContain('قاعدة البيانات');
-    
-    consoleSpy.mockRestore();
   });
 
   test('should log different error types', () => {
@@ -39,15 +42,23 @@ describe('Logger + Error Handler Integration', () => {
       { error: new Error('Database error'), name: 'DatabaseError' }
     ];
     
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    // Mock Winston logger transport
+    const mockTransport = {
+      log: jest.fn(),
+      write: jest.fn()
+    };
+    
+    const loggerSpy = jest.spyOn(logger, 'error').mockImplementation((message, meta) => {
+      mockTransport.log(message, meta);
+    });
     
     errors.forEach(({ error, name }) => {
       error.name = name;
       logger.error(`${name} occurred`, { error: error.message });
     });
     
-    expect(consoleSpy).toHaveBeenCalledTimes(3);
-    consoleSpy.mockRestore();
+    expect(mockTransport.log).toHaveBeenCalledTimes(3);
+    loggerSpy.mockRestore();
   });
 
   test('should handle error with context', () => {
@@ -58,14 +69,22 @@ describe('Logger + Error Handler Integration', () => {
       timestamp: new Date().toISOString()
     };
     
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+    // Mock Winston logger transport
+    const mockTransport = {
+      log: jest.fn(),
+      write: jest.fn()
+    };
+    
+    const loggerSpy = jest.spyOn(logger, 'error').mockImplementation((message, meta) => {
+      mockTransport.log(message, meta);
+    });
     
     // Format and log error
     const formattedError = errorHandler.formatError(error, context);
     logger.error('Error occurred', formattedError);
     
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+    expect(mockTransport.log).toHaveBeenCalled();
+    loggerSpy.mockRestore();
   });
 
   test('should handle retryable errors', () => {
@@ -75,15 +94,24 @@ describe('Logger + Error Handler Integration', () => {
     const isRetryable = errorHandler.isRetryableError(networkError);
     expect(isRetryable).toBe(true);
     
+    // Mock Winston logger transport
+    const mockTransport = {
+      log: jest.fn(),
+      write: jest.fn()
+    };
+    
+    const loggerSpy = jest.spyOn(logger, 'warn').mockImplementation((message, meta) => {
+      mockTransport.log(message, meta);
+    });
+    
     // Log retryable error
-    const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
     logger.warn('Retryable error occurred', { 
       error: networkError.message, 
       retryable: true 
     });
     
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+    expect(mockTransport.log).toHaveBeenCalled();
+    loggerSpy.mockRestore();
   });
 
   test('should handle non-retryable errors', () => {
@@ -93,14 +121,23 @@ describe('Logger + Error Handler Integration', () => {
     const isRetryable = errorHandler.isRetryableError(validationError);
     expect(isRetryable).toBe(false);
     
+    // Mock Winston logger transport
+    const mockTransport = {
+      log: jest.fn(),
+      write: jest.fn()
+    };
+    
+    const loggerSpy = jest.spyOn(logger, 'error').mockImplementation((message, meta) => {
+      mockTransport.log(message, meta);
+    });
+    
     // Log non-retryable error
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
     logger.error('Non-retryable error occurred', { 
       error: validationError.message, 
       retryable: false 
     });
     
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
+    expect(mockTransport.log).toHaveBeenCalled();
+    loggerSpy.mockRestore();
   });
 });

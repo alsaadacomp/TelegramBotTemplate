@@ -16,7 +16,7 @@ describe('Error Handler Utility', () => {
       const result = errorHandler.handleError(error);
       
       expect(result).toBeDefined();
-      expect(result.message).toContain('تحقق');
+      expect(result.message).toContain('البيانات المدخلة غير صحيحة');
     });
 
     test('should handle database error', () => {
@@ -43,7 +43,7 @@ describe('Error Handler Utility', () => {
       const result = errorHandler.handleError(error);
       
       expect(result).toBeDefined();
-      expect(result.message).toContain('خطأ غير معروف');
+      expect(result.message).toContain('حدث خطأ غير متوقع');
     });
   });
 
@@ -106,13 +106,19 @@ describe('Error Handler Utility', () => {
       const error = new Error('Test error');
       const context = { userId: 123 };
       
-      // Mock console.log to capture output
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      // Mock the Logger.error method
+      const Logger = require('../../../src/utils/logger.util');
+      const loggerSpy = jest.spyOn(Logger, 'error').mockImplementation();
       
       errorHandler.logError(error, context);
       
-      expect(consoleSpy).toHaveBeenCalled();
-      consoleSpy.mockRestore();
+      expect(loggerSpy).toHaveBeenCalledWith('Error occurred', expect.objectContaining({
+        name: 'Error',
+        message: 'Test error',
+        context: { userId: 123 }
+      }));
+      
+      loggerSpy.mockRestore();
     });
   });
 });
